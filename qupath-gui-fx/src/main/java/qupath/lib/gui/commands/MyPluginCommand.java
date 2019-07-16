@@ -1,9 +1,7 @@
 package qupath.lib.gui.commands;
 
-
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.interfaces.PathCommand;
-
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -19,6 +17,7 @@ import javax.imageio.ImageIO;
 public class MyPluginCommand implements PathCommand {
 
 	private QuPathGUI qupath;
+	private byte[] argb;
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -27,17 +26,19 @@ public class MyPluginCommand implements PathCommand {
 	@Override
 	public void run() {
 
-		BufferedImage img = qupath.getViewer().getThumbnail();
+		BufferedImage img = qupath.getViewer().getThumbnail();		
 		try {
-			byte[] bytes = toByteArrayAutoClosable(img, "png");
+			argb = toByteArrayAutoClosable(img, "png");
 		} catch (IOException e) {
 
 			e.printStackTrace();
 		}
+		binarize(argb, 127);
+		for (int i = 0; i < argb.length; i++) {
+			System.out.println(argb.)
+		}
 
 	}
-	
-	
 
 	private static byte[] toByteArrayAutoClosable(BufferedImage image,
 			String type) throws IOException {
@@ -55,16 +56,64 @@ public class MyPluginCommand implements PathCommand {
 			int r = (bytes[pos] >> 16) & 0xff;
 			int g = (bytes[pos] >> 8) & 0xff;
 			int b = bytes[pos] & 0xff;
-			int grayScale = (r + g + b) / 3;
+			int avg = (r + g + b) / 3;
 
-			if (grayScale < threshold) {
-				grayScale = 0x00000000;
+			if (avg < threshold) {
+				avg = 0x00000000;
 			} else {
-				grayScale = 0xffffffff;
+				avg = 0xffffffff;
 			}
 
-			bytes[pos] = (byte) ((0xFF << 24) | (grayScale << 16)
-					| (grayScale << 8) | grayScale);
+			bytes[pos] = (byte) ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
 		}
+	}
+
+	private void toGrayScale(byte[] bytes) {
+
+		for (int i = 0; i < bytes.length; i++) {
+			int r = (bytes[pos] >> 16) & 0xff;
+			int g = (bytes[pos] >> 8) & 0xff;
+			int b = bytes[pos] & 0xff;
+			int avg = (r + g + b) / 3;
+			bytes[pos] = (byte) ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
+		}
+	}
+
+	
+	private int getIterativeThreshold(byte[] argb, int width, int height) {
+		long totalSmallerThreshold = 0;
+		long totalTallerThreshold = 0;
+		long countPixelSmaller = 0;
+		long countPixelTaller = 0;
+		int currentThreshold = 127;
+		int newThreshold = 127;
+		float averageSmallerThreshold = 0;
+		float averageTallerThreshold = 0;
+
+		do {
+			currentThreshold = newThreshold;
+			for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++) {
+					int pos = y * width + x;
+					int pix = argb[pos];
+					pix = (pix & 0x0000ff);
+
+					if (pix <= currentThreshold) {
+						totalSmallerThreshold += pix;
+						countPixelSmaller++;
+					} else {
+						totalTallerThreshold += pix;
+						countPixelTaller++;
+					}
+				}
+			}
+			averageSmallerThreshold = totalSmallerThreshold
+					/ countPixelSmaller;
+			averageTallerThreshold = totalTallerThreshold
+					/ countPixelTaller;
+			float x = (averageSmallerThreshold + averageTallerThreshold) / 2;
+			newThreshold = (int) x;
+		} while ((newThreshold - currentThreshold) >= 1);
+		return currentThreshold;
 	}
 }
