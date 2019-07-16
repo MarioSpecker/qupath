@@ -26,17 +26,17 @@ public class MyPluginCommand implements PathCommand {
 	@Override
 	public void run() {
 
-		BufferedImage img = qupath.getViewer().getThumbnail();		
+		BufferedImage img = qupath.getViewer().getThumbnail();
 		try {
 			argb = toByteArrayAutoClosable(img, "png");
 		} catch (IOException e) {
 
 			e.printStackTrace();
 		}
-		binarize(argb, 127);
-		for (int i = 0; i < argb.length; i++) {
-			System.out.println(argb.)
-		}
+		toGrayScale(argb);
+		int threshold = getIterativeThreshold(argb, img.getHeight(), img.getWidth());
+		System.out.println(threshold);
+		
 
 	}
 
@@ -48,38 +48,31 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 
-	@SuppressWarnings("unused")
-	private void binarize(byte[] bytes, int threshold) {
-		for (int pos = 0; pos < bytes.length; pos++) {
-
-			// so that it also works with color picture
-			int r = (bytes[pos] >> 16) & 0xff;
-			int g = (bytes[pos] >> 8) & 0xff;
-			int b = bytes[pos] & 0xff;
-			int avg = (r + g + b) / 3;
-
-			if (avg < threshold) {
-				avg = 0x00000000;
-			} else {
-				avg = 0xffffffff;
-			}
-
-			bytes[pos] = (byte) ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
-		}
-	}
+//	@SuppressWarnings("unused")
+//	private void binarize(byte[] bytes, int threshold) {
+//		for (int pos = 0; pos < bytes.length; pos++) {
+//
+//			if (avg < threshold) {
+//				avg = 0x00000000;
+//			} else {
+//				avg = 0xffffffff;
+//			}
+//
+//			bytes[pos] = (byte) ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
+//		}
+//	}
 
 	private void toGrayScale(byte[] bytes) {
 
 		for (int i = 0; i < bytes.length; i++) {
-			int r = (bytes[pos] >> 16) & 0xff;
-			int g = (bytes[pos] >> 8) & 0xff;
-			int b = bytes[pos] & 0xff;
+			int r = (bytes[i] >> 16) & 0xff;
+			int g = (bytes[i] >> 8) & 0xff;
+			int b = bytes[i] & 0xff;
 			int avg = (r + g + b) / 3;
-			bytes[pos] = (byte) ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
+			bytes[i] = (byte) ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
 		}
 	}
 
-	
 	private int getIterativeThreshold(byte[] argb, int width, int height) {
 		long totalSmallerThreshold = 0;
 		long totalTallerThreshold = 0;
@@ -92,12 +85,13 @@ public class MyPluginCommand implements PathCommand {
 
 		do {
 			currentThreshold = newThreshold;
+			System.out.println("Das ist der Current Threshold1 " + currentThreshold);
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					int pos = y * width + x;
 					int pix = argb[pos];
 					pix = (pix & 0x0000ff);
-
+					System.out.println("+++++++" +pix);
 					if (pix <= currentThreshold) {
 						totalSmallerThreshold += pix;
 						countPixelSmaller++;
@@ -107,12 +101,11 @@ public class MyPluginCommand implements PathCommand {
 					}
 				}
 			}
-			averageSmallerThreshold = totalSmallerThreshold
-					/ countPixelSmaller;
-			averageTallerThreshold = totalTallerThreshold
-					/ countPixelTaller;
+			averageSmallerThreshold = totalSmallerThreshold / countPixelSmaller;
+			averageTallerThreshold = totalTallerThreshold / countPixelTaller;
 			float x = (averageSmallerThreshold + averageTallerThreshold) / 2;
 			newThreshold = (int) x;
+			System.out.println("Das ist der New Threshold" + newThreshold);
 		} while ((newThreshold - currentThreshold) >= 1);
 		return currentThreshold;
 	}
