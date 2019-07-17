@@ -16,6 +16,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import jfxtras.scene.layout.GridPane;
@@ -139,7 +140,41 @@ public class MyPluginCommand implements PathCommand {
 		} while (Math.abs((newThreshold - currentThreshold)) >= 1);
 		return newThreshold;
 	}
+
+	private boolean[][] kernel(double radius) {
+
+		boolean[][] h = new boolean[gridSize][gridSize];
+		int x = 0, y = 0;
+
+		for (int j = -2; j <= 2; j++) {
+			for (int i = -2; i <= 2; i++) {
+				double r = Math.sqrt((Math.pow(i, 2) + Math.pow(j, 2)));
+				if (r > radius) {
+					h[x][y] = false;
+				} else {
+					h[x][y] = true;
+				}
+				y++;
+			}
+			y = 0;
+			x++;
+		}
+		return h;
+	}
 	
+	
+	public void printKernel(boolean[][] kernel) {
+        for (boolean[] xS : kernel) {
+            for (boolean v : xS) {
+
+                System.out.println(v);
+            }
+            System.out.println();
+        }
+
+    }
+
+	// Graphic....
 
 	@SuppressWarnings("restriction")
 	protected Stage createDialog() {
@@ -150,57 +185,55 @@ public class MyPluginCommand implements PathCommand {
 		dialog.setScene(new Scene(addBorderPane(), 500, 500));
 		return dialog;
 	}
-	
 
 	@SuppressWarnings("restriction")
 	private BorderPane addBorderPane() {
 		BorderPane root = new BorderPane();
 
-		
-
 		// CENTER
-		
+
 		Pane b = makeGrid(gridSize);
 		root.setCenter(b);
-		
+
 		HBox vb = new HBox();
 		Button btn1 = new Button();
-		btn1.setOnAction(actionEvent ->  {
-		        
+		btn1.setOnAction(actionEvent -> {
+			double radius = 1.0;
+			this.kernel(radius);
+			this.printKernel(kernel(radius));
 		});
 		vb.getChildren().add(btn1);
 
 		Button btn2 = new Button();
-		btn2.setOnAction(actionEvent ->  {
-		      
+		btn2.setOnAction(actionEvent -> {
+			double radius = 1.5;
+			this.kernel(radius);
+			this.printKernel(kernel(radius));
 		});
 		vb.getChildren().add(btn2);
 
 		Button btn3 = new Button();
 		btn3.setText("B3");
-		btn3.setOnAction(actionEvent ->  {
-		       
+		btn3.setOnAction(actionEvent -> {
+			double radius = 2.0;
+			this.kernel(radius);
+			this.printKernel(kernel(radius));
 		});
 		vb.getChildren().add(btn3);
 
 		Button btn4 = new Button();
-		btn4.setOnAction(actionEvent ->  {
-		       
+		btn4.setOnAction(actionEvent -> {
+			double radius = 2.8;
+			this.kernel(radius);
+			this.printKernel(kernel(radius));
 		});
 		vb.getChildren().add(btn4);
 
-		Button btn5 = new Button();
-		btn5.setText("B5");
-		btn5.setOnAction(actionEvent ->  {
-		       
-		});
-		vb.getChildren().add(btn5);
 		vb.setAlignment(Pos.CENTER);
-		vb.setHgrow(btn1, Priority.ALWAYS);
-		vb.setHgrow(btn2, Priority.ALWAYS);
+		HBox.setHgrow(btn1, Priority.ALWAYS);
+		HBox.setHgrow(btn2, Priority.ALWAYS);
 		vb.setHgrow(btn3, Priority.ALWAYS);
 		vb.setHgrow(btn4, Priority.ALWAYS);
-		vb.setHgrow(btn5, Priority.ALWAYS);
 		vb.setPrefWidth(400);
 		root.setBottom(vb);
 		root.setAlignment(vb, Pos.CENTER);
