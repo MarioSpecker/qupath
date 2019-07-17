@@ -40,13 +40,19 @@ import javafx.scene.shape.*;
  */
 public class MyPluginCommand implements PathCommand {
 
-	private static int gridSize = 5;
+	private static int gridSize;
 	private Stage dialog;
 	private QuPathGUI qupath;
 	private byte[] argb;
+	private static Rectangle[][] rec;
+	private boolean[][] kernel;
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
+		this.gridSize = 5;
+		this.kernel = new boolean[gridSize][gridSize];
+		this.rec = new Rectangle[gridSize][gridSize];
+		
 	}
 
 	@Override
@@ -141,38 +147,38 @@ public class MyPluginCommand implements PathCommand {
 		return newThreshold;
 	}
 
-	private boolean[][] kernel(double radius) {
+	private boolean[][] createKernel(double radius) {
 
-		boolean[][] h = new boolean[gridSize][gridSize];
+		kernel = new boolean[gridSize][gridSize];
 		int x = 0, y = 0;
 
 		for (int j = -2; j <= 2; j++) {
 			for (int i = -2; i <= 2; i++) {
 				double r = Math.sqrt((Math.pow(i, 2) + Math.pow(j, 2)));
 				if (r > radius) {
-					h[x][y] = false;
+					kernel[x][y] = false;
 				} else {
-					h[x][y] = true;
+					kernel[x][y] = true;
 				}
 				y++;
 			}
 			y = 0;
 			x++;
 		}
-		return h;
+		return kernel;
 	}
 	
-	
+
 	public void printKernel(boolean[][] kernel) {
-        for (boolean[] xS : kernel) {
-            for (boolean v : xS) {
+		for (boolean[] xS : kernel) {
+			for (boolean v : xS) {
 
-                System.out.println(v);
-            }
-            System.out.println();
-        }
+				System.out.println(v);
+			}
+			System.out.println();
+		}
 
-    }
+	}
 
 	// Graphic....
 
@@ -199,16 +205,18 @@ public class MyPluginCommand implements PathCommand {
 		Button btn1 = new Button();
 		btn1.setOnAction(actionEvent -> {
 			double radius = 1.0;
-			this.kernel(radius);
-			this.printKernel(kernel(radius));
+			this.createKernel(radius);
+			this.fillGridKernel(kernel);
+			// this.printKernel(kernel(radius));
 		});
 		vb.getChildren().add(btn1);
 
 		Button btn2 = new Button();
 		btn2.setOnAction(actionEvent -> {
 			double radius = 1.5;
-			this.kernel(radius);
-			this.printKernel(kernel(radius));
+			this.createKernel(radius);
+			// this.printKernel(kernel(radius));
+
 		});
 		vb.getChildren().add(btn2);
 
@@ -216,16 +224,17 @@ public class MyPluginCommand implements PathCommand {
 		btn3.setText("B3");
 		btn3.setOnAction(actionEvent -> {
 			double radius = 2.0;
-			this.kernel(radius);
-			this.printKernel(kernel(radius));
+			this.createKernel(radius);
+			//this.printKernel(kernel);
+
 		});
 		vb.getChildren().add(btn3);
 
 		Button btn4 = new Button();
 		btn4.setOnAction(actionEvent -> {
 			double radius = 2.8;
-			this.kernel(radius);
-			this.printKernel(kernel(radius));
+			this.createKernel(radius);
+			//this.printKernel(kernel);
 		});
 		vb.getChildren().add(btn4);
 
@@ -247,7 +256,7 @@ public class MyPluginCommand implements PathCommand {
 		double width = 400 / size;
 		Pane p = new Pane();
 
-		Rectangle[][] rec = new Rectangle[size][size];
+		rec = new Rectangle[size][size];
 
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
@@ -266,4 +275,15 @@ public class MyPluginCommand implements PathCommand {
 		return p;
 	}
 
+	@SuppressWarnings("unused")
+	private void fillGridKernel(boolean[][] kernel) {
+		for (int i = 0; i < gridSize; i++) {
+			for (int j = 0; j < gridSize; j++) {
+				if (kernel[i][j] == true) {
+					rec[i][j].setFill(Color.RED);
+				}
+			}
+
+		}
+	}
 }
