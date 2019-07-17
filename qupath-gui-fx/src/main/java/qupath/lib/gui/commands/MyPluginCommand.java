@@ -78,8 +78,8 @@ public class MyPluginCommand implements PathCommand {
 		long totalTallerThreshold = 0;
 		long countPixelSmaller = 0;
 		long countPixelTaller = 0;
-		int currentThreshold = 127;
-		int newThreshold = 127;
+		int currentThreshold = 100;
+		int newThreshold = 200;
 		float averageSmallerThreshold = 0;
 		float averageTallerThreshold = 0;
 
@@ -91,7 +91,7 @@ public class MyPluginCommand implements PathCommand {
 					int pos = y * width + x;
 					int pix = argb[pos];
 					pix = (pix & 0x0000ff);
-					System.out.println("+++++++" +pix);
+					
 					if (pix <= currentThreshold) {
 						totalSmallerThreshold += pix;
 						countPixelSmaller++;
@@ -106,7 +106,7 @@ public class MyPluginCommand implements PathCommand {
 			float x = (averageSmallerThreshold + averageTallerThreshold) / 2;
 			newThreshold = (int) x;
 			System.out.println("Das ist der New Threshold" + newThreshold);
-		} while ((newThreshold - currentThreshold) >= 1);
-		return currentThreshold;
+		} while (Math.abs((newThreshold - currentThreshold)) >= 1);
+		return newThreshold;
 	}
 }
