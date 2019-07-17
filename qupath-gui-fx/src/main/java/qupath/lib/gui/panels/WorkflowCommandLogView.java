@@ -140,6 +140,7 @@ public class WorkflowCommandLogView implements ImageDataChangeListener<BufferedI
 	
 	
 	
+	@SuppressWarnings("restriction")
 	protected BorderPane createPane() {
 		BorderPane pane = new BorderPane();
 		TableColumn<KeyValue<Object>, String> col1 = new TableColumn<>("Parameter");
