@@ -9,8 +9,11 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
+
 import javafx.scene.paint.Color;
 import javafx.scene.control.Label;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
@@ -27,6 +30,7 @@ import javafx.stage.Stage;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Slider;
+import javafx.scene.shape.*;
 
 /**
  * 
@@ -35,6 +39,7 @@ import javafx.scene.control.Slider;
  */
 public class MyPluginCommand implements PathCommand {
 
+	private static int gridSize = 5;
 	private Stage dialog;
 	private QuPathGUI qupath;
 	private byte[] argb;
@@ -46,11 +51,9 @@ public class MyPluginCommand implements PathCommand {
 	@Override
 	public void run() {
 
-		if (dialog == null) {
-			dialog = createDialog();
-			dialog.show();
+		dialog = createDialog();
+		dialog.show();
 
-		}
 		BufferedImage img = qupath.getViewer().getThumbnail();
 		try {
 			argb = toByteArrayAutoClosable(img, "png");
@@ -136,6 +139,7 @@ public class MyPluginCommand implements PathCommand {
 		} while (Math.abs((newThreshold - currentThreshold)) >= 1);
 		return newThreshold;
 	}
+	
 
 	@SuppressWarnings("restriction")
 	protected Stage createDialog() {
@@ -146,57 +150,87 @@ public class MyPluginCommand implements PathCommand {
 		dialog.setScene(new Scene(addBorderPane(), 500, 500));
 		return dialog;
 	}
-
 	
+
 	@SuppressWarnings("restriction")
 	private BorderPane addBorderPane() {
 		BorderPane root = new BorderPane();
 
-		root.setPadding(new Insets(15, 20, 10, 10));
-
-		// TOP
-
-		Label infoLabel = new Label("-");
-		infoLabel.setTextFill(Color.BLUE);
-		root.setLeft(infoLabel);
+		
 
 		// CENTER
-		Slider slider = new Slider();
-
-		slider.setMin(0);
-		slider.setMax(50);
-		slider.setValue(80);
-
-		slider.setShowTickLabels(true);
-		slider.setShowTickMarks(true);
-
-		slider.setBlockIncrement(10);
-
-		// Adding Listener to value property.
-		slider.valueProperty().addListener(new ChangeListener<Number>() {
-
-			@Override
-			public void changed(ObservableValue<? extends Number> observable, //
-					Number oldValue, Number newValue) {
-
-				infoLabel.setText("New value: " + newValue);
-			}
+		
+		Pane b = makeGrid(gridSize);
+		root.setCenter(b);
+		
+		HBox vb = new HBox();
+		Button btn1 = new Button();
+		btn1.setOnAction(actionEvent ->  {
+		        
 		});
-		root.setBottom(slider);
+		vb.getChildren().add(btn1);
 
-		// RIGHT
-		Button btnRight = new Button("Right");
-		btnRight.setPadding(new Insets(5, 5, 5, 5));
-		root.setRight(btnRight);
-		// Set margin for right area.
-		BorderPane.setMargin(btnRight, new Insets(10, 10, 10, 10));
+		Button btn2 = new Button();
+		btn2.setOnAction(actionEvent ->  {
+		      
+		});
+		vb.getChildren().add(btn2);
 
-		// BOTTOM
+		Button btn3 = new Button();
+		btn3.setText("B3");
+		btn3.setOnAction(actionEvent ->  {
+		       
+		});
+		vb.getChildren().add(btn3);
 
-		// Alignment.
+		Button btn4 = new Button();
+		btn4.setOnAction(actionEvent ->  {
+		       
+		});
+		vb.getChildren().add(btn4);
 
+		Button btn5 = new Button();
+		btn5.setText("B5");
+		btn5.setOnAction(actionEvent ->  {
+		       
+		});
+		vb.getChildren().add(btn5);
+		vb.setAlignment(Pos.CENTER);
+		vb.setHgrow(btn1, Priority.ALWAYS);
+		vb.setHgrow(btn2, Priority.ALWAYS);
+		vb.setHgrow(btn3, Priority.ALWAYS);
+		vb.setHgrow(btn4, Priority.ALWAYS);
+		vb.setHgrow(btn5, Priority.ALWAYS);
+		vb.setPrefWidth(400);
+		root.setBottom(vb);
+		root.setAlignment(vb, Pos.CENTER);
 		return root;
 
+	}
+
+	@SuppressWarnings("restriction")
+	public static Pane makeGrid(int size) {
+
+		double width = 400 / size;
+		Pane p = new Pane();
+
+		Rectangle[][] rec = new Rectangle[size][size];
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				rec[i][j] = new Rectangle();
+				rec[i][j].setX(i * width);
+				rec[i][j].setY(j * width);
+				rec[i][j].setWidth(width);
+				rec[i][j].setHeight(width);
+				rec[i][j].setFill(null);
+				rec[i][j].setStroke(Color.BLACK);
+				p.getChildren().add(rec[i][j]);
+
+			}
+		}
+
+		return p;
 	}
 
 }
