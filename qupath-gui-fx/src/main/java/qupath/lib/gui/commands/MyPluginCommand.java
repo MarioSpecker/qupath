@@ -79,13 +79,16 @@ public class MyPluginCommand implements PathCommand {
 		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
 		binarize(argb, img.getWidth(), img.getHeight(), threshold);
 		
+		
 		BufferedImage resizedImage = new BufferedImage(img.getWidth()+4, img.getHeight()+4, BufferedImage.TYPE_INT_ARGB);
-		resizedImage.createGraphics().setColor(java.awt.Color.white);
+		prepareImageForDilatation(image, array);
 		resizedImage.setRGB(2, 2, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
-		resizedARGB = new int[resizedImage.getHeight()*resizedImage.getWidth()];	
-		resizedImage.getRGB(0, 0, resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, 0, resizedImage.getWidth());
-		dilatation(resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, argb);
-		drawImage(img.getHeight(), img.getWidth(), argb);
+		
+		
+		
+		
+		//dilatation(resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, argb);
+		//drawImage(img.getHeight(), img.getWidth(), argb);
 		//drawImage(resizedImage.getHeight(), resizedImage.getWidth(), argb);
 //		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
 //		toGrayScale(img.getHeight(), img.getWidth(), argb);
@@ -183,7 +186,13 @@ public class MyPluginCommand implements PathCommand {
 		return k;
 	}
 	
-	
+	private void prepareImageForDilatation(BufferedImage image, int[] array){
+		image.createGraphics().setColor(java.awt.Color.white);
+		image.createGraphics().fillRect ( 0, 0, image.getWidth(), image.getHeight() );
+		array = new int[image.getHeight()*image.getWidth()];	
+		image.getRGB(0, 0, image.getWidth(), image.getHeight(), array, 0, image.getWidth());
+		
+	}
 
 	private void dilatation(int width, int height, int[] resizedArray, int[] rgb){
 		for(int y=2;y<height-2;y++){
@@ -207,6 +216,10 @@ public class MyPluginCommand implements PathCommand {
 				}
 			}
 		}
+	}
+	
+	private void erosion(int width, int height, int[] resizedArray, int[] rgb){
+	
 	}
 	
 	public void printKernel(boolean[][] kernel) {
