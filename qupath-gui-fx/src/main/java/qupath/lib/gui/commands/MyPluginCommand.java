@@ -2,9 +2,11 @@ package qupath.lib.gui.commands;
 
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.interfaces.PathCommand;
+import qupath.lib.gui.helpers.DisplayHelpers;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
@@ -33,6 +35,10 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Slider;
 import javafx.scene.shape.*;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.io.ByteArrayInputStream;
+
 /**
  * 
  * @author Mario
@@ -43,7 +49,7 @@ public class MyPluginCommand implements PathCommand {
 	private static int gridSize;
 	private Stage dialog;
 	private QuPathGUI qupath;
-	private byte[] argb;
+	private int[] argb;
 	private static Rectangle[][] rec;
 	private boolean[][] kernel;
 
@@ -52,7 +58,7 @@ public class MyPluginCommand implements PathCommand {
 		this.gridSize = 5;
 		this.kernel = new boolean[gridSize][gridSize];
 		this.rec = new Rectangle[gridSize][gridSize];
-		
+
 	}
 
 	@Override
@@ -62,57 +68,52 @@ public class MyPluginCommand implements PathCommand {
 		dialog.show();
 
 		BufferedImage img = qupath.getViewer().getThumbnail();
-		try {
-			argb = toByteArrayAutoClosable(img, "png");
-		} catch (IOException e) {
-
-			e.printStackTrace();
-		}
-		toGrayScale(argb);
-		int threshold = getIterativeThreshold(argb, img.getHeight(),
+		argb = new int[img.getHeight() * img.getWidth()];
+		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0,
 				img.getWidth());
-		System.out.println(threshold);
-
+		toGrayScale(img.getHeight(), img.getWidth(), argb);
+		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
+		binarize(argb, img.getWidth(), img.getHeight(), threshold);
+		drawImage(img.getHeight(), img.getWidth(), argb);
 	}
 
-	private static byte[] toByteArrayAutoClosable(BufferedImage image,
-			String type) throws IOException {
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-			ImageIO.write(image, type, out);
-			return out.toByteArray();
-		}
+	private void drawImage(int height, int width, int[] rgb) {
+		qupath.getViewer().getThumbnail()
+				.setRGB(0, 0, width, height, rgb, 0, width);
+		qupath.getViewer().repaintEntireImage();
 	}
 
 	@SuppressWarnings("unused")
-	private void binarize(byte[] bytes, int height, int width, int threshold) {
+	private void binarize(int[] rgb, int height, int width, int threshold) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				int pos = y * width + x;
-				int pix = argb[pos];
-				pix = (pix & 0x0000ff);
-
+				int pix = argb[pos] & 0xff;
+				
 				if (pix < threshold) {
-					pix = 0;
+					pix = 0x00000000;
 				} else {
-					pix = 255;
+					pix = 0xffffffff;
 				}
-				bytes[pos] = (byte) pix;
+				rgb[pos] = (0xFF << 24) | (pix << 16) | (pix << 8) | pix;
 			}
 		}
 	}
 
-	private void toGrayScale(byte[] bytes) {
-
-		for (int i = 0; i < bytes.length; i++) {
-			int r = (bytes[i] >> 16) & 0xff;
-			int g = (bytes[i] >> 8) & 0xff;
-			int b = bytes[i] & 0xff;
-			int avg = (r + g + b) / 3;
-			bytes[i] = (byte) ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
+	private void toGrayScale(int height, int width, int [] rgb) {
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				int pos = y * width + x;
+				int r = (rgb[pos] >> 16) & 0xff;
+				int g = (rgb[pos] >> 8) & 0xff;
+				int b = rgb[pos] & 0xff;
+				int avg = (r + g + b) / 3;
+				rgb[pos] = ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
+			}
 		}
 	}
 
-	private int getIterativeThreshold(byte[] argb, int width, int height) {
+	private int getIterativeThreshold(int[] argb, int width, int height) {
 		long totalSmallerThreshold = 0;
 		long totalTallerThreshold = 0;
 		long countPixelSmaller = 0;
@@ -121,15 +122,12 @@ public class MyPluginCommand implements PathCommand {
 		int newThreshold = 200;
 		float averageSmallerThreshold = 0;
 		float averageTallerThreshold = 0;
-
 		do {
 			currentThreshold = newThreshold;
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					int pos = y * width + x;
-					int pix = argb[pos];
-					pix = (pix & 0x0000ff);
-
+					int pix = argb[pos] & 0xff;
 					if (pix <= currentThreshold) {
 						totalSmallerThreshold += pix;
 						countPixelSmaller++;
@@ -146,28 +144,26 @@ public class MyPluginCommand implements PathCommand {
 		} while (Math.abs((newThreshold - currentThreshold)) >= 1);
 		return newThreshold;
 	}
+	
 
 	private boolean[][] createKernel(double radius) {
-
-		kernel = new boolean[gridSize][gridSize];
+		boolean[][] k = new boolean[gridSize][gridSize];
 		int x = 0, y = 0;
-
 		for (int j = -2; j <= 2; j++) {
 			for (int i = -2; i <= 2; i++) {
 				double r = Math.sqrt((Math.pow(i, 2) + Math.pow(j, 2)));
 				if (r > radius) {
-					kernel[x][y] = false;
+					k[x][y] = false;
 				} else {
-					kernel[x][y] = true;
+					k[x][y] = true;
 				}
 				y++;
 			}
 			y = 0;
 			x++;
 		}
-		return kernel;
+		return k;
 	}
-	
 
 	public void printKernel(boolean[][] kernel) {
 		for (boolean[] xS : kernel) {
@@ -188,7 +184,7 @@ public class MyPluginCommand implements PathCommand {
 		dialog.initOwner(qupath.getStage());
 		dialog.setTitle("My Plugin Dialog");
 
-		dialog.setScene(new Scene(addBorderPane(), 500, 500));
+		dialog.setScene(new Scene(addBorderPane(), 400, 400));
 		return dialog;
 	}
 
@@ -196,68 +192,65 @@ public class MyPluginCommand implements PathCommand {
 	private BorderPane addBorderPane() {
 		BorderPane root = new BorderPane();
 
-		// CENTER
-
 		Pane b = makeGrid(gridSize);
+		root.setAlignment(b, Pos.CENTER);
+		root.setMargin(b, new Insets(20, 20, 20, 20));
 		root.setCenter(b);
 
 		HBox vb = new HBox();
 		Button btn1 = new Button();
+		btn1.setText("Button 1");
 		btn1.setOnAction(actionEvent -> {
 			double radius = 1.0;
-			this.createKernel(radius);
+			kernel = this.createKernel(radius);
 			this.fillGridKernel(kernel);
 			// this.printKernel(kernel(radius));
 		});
-		vb.getChildren().add(btn1);
-
 		Button btn2 = new Button();
+		btn2.setText("Button 2");
 		btn2.setOnAction(actionEvent -> {
 			double radius = 1.5;
-			this.createKernel(radius);
-			// this.printKernel(kernel(radius));
+			kernel = this.createKernel(radius);
+			this.fillGridKernel(kernel);
 
 		});
-		vb.getChildren().add(btn2);
-
 		Button btn3 = new Button();
-		btn3.setText("B3");
+		btn3.setText("Button 3");
 		btn3.setOnAction(actionEvent -> {
 			double radius = 2.0;
-			this.createKernel(radius);
-			//this.printKernel(kernel);
+			kernel = this.createKernel(radius);
+			this.fillGridKernel(kernel);
 
 		});
-		vb.getChildren().add(btn3);
-
 		Button btn4 = new Button();
+		btn4.setText("Button 4");
 		btn4.setOnAction(actionEvent -> {
-			double radius = 2.8;
-			this.createKernel(radius);
-			//this.printKernel(kernel);
+			double radius = 2.7;
+			kernel = this.createKernel(radius);
+			this.fillGridKernel(kernel);
+			// this.printKernel(kernel);
 		});
-		vb.getChildren().add(btn4);
-
-		vb.setAlignment(Pos.CENTER);
-		HBox.setHgrow(btn1, Priority.ALWAYS);
-		HBox.setHgrow(btn2, Priority.ALWAYS);
+		vb.setHgrow(btn1, Priority.ALWAYS);
+		vb.setHgrow(btn2, Priority.ALWAYS);
 		vb.setHgrow(btn3, Priority.ALWAYS);
 		vb.setHgrow(btn4, Priority.ALWAYS);
-		vb.setPrefWidth(400);
+		btn1.setMaxWidth(Double.MAX_VALUE);
+		btn2.setMaxWidth(Double.MAX_VALUE);
+		btn3.setMaxWidth(Double.MAX_VALUE);
+		btn4.setMaxWidth(Double.MAX_VALUE);
+		vb.getChildren().addAll(btn1, btn2, btn3, btn4);
+
 		root.setBottom(vb);
-		root.setAlignment(vb, Pos.CENTER);
+
 		return root;
 
 	}
 
 	@SuppressWarnings("restriction")
 	public static Pane makeGrid(int size) {
-
-		double width = 400 / size;
+		double width = 300 / size;
 		Pane p = new Pane();
-
-		rec = new Rectangle[size][size];
-
+		// rec = new Rectangle[size][size];
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
 				rec[i][j] = new Rectangle();
@@ -268,19 +261,19 @@ public class MyPluginCommand implements PathCommand {
 				rec[i][j].setFill(null);
 				rec[i][j].setStroke(Color.BLACK);
 				p.getChildren().add(rec[i][j]);
-
 			}
 		}
-
 		return p;
 	}
 
-	@SuppressWarnings("unused")
+	
 	private void fillGridKernel(boolean[][] kernel) {
 		for (int i = 0; i < gridSize; i++) {
 			for (int j = 0; j < gridSize; j++) {
 				if (kernel[i][j] == true) {
 					rec[i][j].setFill(Color.RED);
+				} else {
+					rec[i][j].setFill(Color.WHITE);
 				}
 			}
 

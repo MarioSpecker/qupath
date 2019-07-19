@@ -1022,7 +1022,7 @@ public class QuPathViewer implements TileListener<BufferedImage>, PathObjectHier
 
 
 	// TODO: Consider making thumbnail update private
-	private void updateThumbnail(final boolean updateOverlayColor) {
+	public void updateThumbnail(final boolean updateOverlayColor) {
 		ImageServer<BufferedImage> server = getServer();
 		if (server == null)
 			return;
