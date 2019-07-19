@@ -11,7 +11,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
-
+//import java.awt.Color;
 import javafx.scene.paint.Color;
 import javafx.scene.control.Label;
 import javafx.event.ActionEvent;
@@ -62,6 +62,7 @@ public class MyPluginCommand implements PathCommand {
 
 	}
 
+	@SuppressWarnings("restriction")
 	@Override
 	public void run() {
 
@@ -69,24 +70,17 @@ public class MyPluginCommand implements PathCommand {
 		dialog.showAndWait();
 		
 
-		BufferedImage img = qupath.getViewer().getThumbnail();
+		BufferedImage img = qupath.getViewer().getThumbnail();			//create Image
 		argb = new int[img.getHeight() * img.getWidth()];
 		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
+		
 		BufferedImage resizedImage = new BufferedImage(img.getWidth()+4, img.getHeight()+4, BufferedImage.TYPE_INT_ARGB);
+		resizedImage.createGraphics().setColor(java.awt.Color.white);
 		resizedImage.setRGB(2, 2, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
 		resizedARGB = new int[resizedImage.getHeight()*resizedImage.getWidth()];	
 		resizedImage.getRGB(0, 0, resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, 0, resizedImage.getWidth());
-		for (int i = 0; i < resizedImage.getHeight(); i++) {
-			for (int j = 0; j < resizedImage.getWidth(); j++) {
-				int pos = i * resizedImage.getWidth() + j;
-				int b = resizedARGB[pos]& 0xff;
-				System.out.println(b);
-			}
-			System.out.println("+++++++++++++++++++++++++++++Reihe " +i);
-		}
-		System.out.println(img.getHeight());
-		System.out.println(resizedImage.getHeight());
-		System.out.println("Ende");
+		dilatation(resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB);
+		//drawImage(resizedImage.getHeight(), resizedImage.getWidth(), resizedARGB);
 //		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
 //		toGrayScale(img.getHeight(), img.getWidth(), argb);
 //		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
@@ -182,7 +176,26 @@ public class MyPluginCommand implements PathCommand {
 		}
 		return k;
 	}
+	
+	
 
+	private void dilatation(int width, int height, int[] array){
+		for(int y=2;y<height-2;y++){
+			for(int x=2;x<width-2;x++){
+				int pos = y*width+x;
+				int pixel = array[pos] & 0xff;
+				if(pixel==255){
+					for(int j=-getHalfKernelSize(); j<=getHalfKernelSize();j++){
+						for(int i=-getHalfKernelSize(); i<=getHalfKernelSize();i++){
+							System.out.println(j);
+						}
+					}
+					
+				}
+			}
+		}
+	}
+	
 	public void printKernel(boolean[][] kernel) {
 		for (boolean[] xS : kernel) {
 			for (boolean v : xS) {
@@ -192,6 +205,10 @@ public class MyPluginCommand implements PathCommand {
 			System.out.println();
 		}
 
+	}
+	
+	private int getHalfKernelSize(){
+		return 2;
 	}
 
 	// Graphic....
