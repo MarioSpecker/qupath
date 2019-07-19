@@ -52,6 +52,7 @@ public class MyPluginCommand implements PathCommand {
 	private int[] argb;
 	private static Rectangle[][] rec;
 	private boolean[][] kernel;
+	private int[] resizedARGB;
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -65,17 +66,34 @@ public class MyPluginCommand implements PathCommand {
 	public void run() {
 
 		dialog = createDialog();
-		dialog.show();
+		dialog.showAndWait();
+		
 
 		BufferedImage img = qupath.getViewer().getThumbnail();
 		argb = new int[img.getHeight() * img.getWidth()];
-		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0,
-				img.getWidth());
-		toGrayScale(img.getHeight(), img.getWidth(), argb);
-		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
-		binarize(argb, img.getWidth(), img.getHeight(), threshold);
-		drawImage(img.getHeight(), img.getWidth(), argb);
+		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
+		BufferedImage resizedImage = new BufferedImage(img.getWidth()+4, img.getHeight()+4, BufferedImage.TYPE_INT_ARGB);
+		resizedImage.setRGB(2, 2, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
+		resizedARGB = new int[resizedImage.getHeight()*resizedImage.getWidth()];	
+		resizedImage.getRGB(0, 0, resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, 0, resizedImage.getWidth());
+		for (int i = 0; i < resizedImage.getHeight(); i++) {
+			for (int j = 0; j < resizedImage.getWidth(); j++) {
+				int pos = i * resizedImage.getWidth() + j;
+				int b = resizedARGB[pos]& 0xff;
+				System.out.println(b);
+			}
+			System.out.println("+++++++++++++++++++++++++++++Reihe " +i);
+		}
+		System.out.println(img.getHeight());
+		System.out.println(resizedImage.getHeight());
+		System.out.println("Ende");
+//		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
+//		toGrayScale(img.getHeight(), img.getWidth(), argb);
+//		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
+//		binarize(argb, img.getWidth(), img.getHeight(), threshold);
+//		drawImage(img.getHeight(), img.getWidth(), argb);
 	}
+	
 
 	private void drawImage(int height, int width, int[] rgb) {
 		qupath.getViewer().getThumbnail()
@@ -196,7 +214,6 @@ public class MyPluginCommand implements PathCommand {
 		root.setAlignment(b, Pos.CENTER);
 		root.setMargin(b, new Insets(20, 20, 20, 20));
 		root.setCenter(b);
-
 		HBox vb = new HBox();
 		Button btn1 = new Button();
 		btn1.setText("Button 1");
