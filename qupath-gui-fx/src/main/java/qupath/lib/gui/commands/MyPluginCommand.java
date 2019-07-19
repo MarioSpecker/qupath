@@ -74,13 +74,19 @@ public class MyPluginCommand implements PathCommand {
 		argb = new int[img.getHeight() * img.getWidth()];
 		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
 		
+		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
+		toGrayScale(img.getHeight(), img.getWidth(), argb);
+		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
+		binarize(argb, img.getWidth(), img.getHeight(), threshold);
+		
 		BufferedImage resizedImage = new BufferedImage(img.getWidth()+4, img.getHeight()+4, BufferedImage.TYPE_INT_ARGB);
 		resizedImage.createGraphics().setColor(java.awt.Color.white);
 		resizedImage.setRGB(2, 2, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
 		resizedARGB = new int[resizedImage.getHeight()*resizedImage.getWidth()];	
 		resizedImage.getRGB(0, 0, resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, 0, resizedImage.getWidth());
-		dilatation(resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB);
-		//drawImage(resizedImage.getHeight(), resizedImage.getWidth(), resizedARGB);
+		dilatation(resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, argb);
+		drawImage(img.getHeight(), img.getWidth(), argb);
+		//drawImage(resizedImage.getHeight(), resizedImage.getWidth(), argb);
 //		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
 //		toGrayScale(img.getHeight(), img.getWidth(), argb);
 //		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
@@ -179,15 +185,22 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 
-	private void dilatation(int width, int height, int[] array){
+	private void dilatation(int width, int height, int[] resizedArray, int[] rgb){
 		for(int y=2;y<height-2;y++){
 			for(int x=2;x<width-2;x++){
 				int pos = y*width+x;
-				int pixel = array[pos] & 0xff;
-				if(pixel==255){
+				int pixelCenter = resizedArray[pos] & 0xff;
+				if(pixelCenter==255){
 					for(int j=-getHalfKernelSize(); j<=getHalfKernelSize();j++){
 						for(int i=-getHalfKernelSize(); i<=getHalfKernelSize();i++){
-							System.out.println(j);
+							if(kernel[i+getHalfKernelSize()][j+getHalfKernelSize()]==true){
+								int pix = resizedArray[(y-j)*width+(x-i)]& 0xff;
+								if(pix==0){
+									int black = 0x000000;
+									rgb[(y-getHalfKernelSize())*(width-4)+(x-getHalfKernelSize())] = (0xFF<<24) | (black<<16) | (black<<8) | black;
+									break;
+								}
+							}
 						}
 					}
 					
