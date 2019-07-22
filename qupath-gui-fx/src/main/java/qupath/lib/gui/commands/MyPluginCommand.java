@@ -16,9 +16,14 @@ import javax.swing.text.html.ImageView;
 
 
 
-
-
-//import java.awt.Color;
+import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.geometry.Insets;
+import javafx.scene.control.Label;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.paint.Color;
 import javafx.scene.control.Label;
 import javafx.event.ActionEvent;
@@ -42,10 +47,13 @@ import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Slider;
 import javafx.scene.shape.*;
 import javafx.scene.control.ComboBox;
-
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.io.ByteArrayInputStream;
+import javafx.scene.control.ToggleButton;
+
 
 /**
  * 
@@ -69,6 +77,10 @@ public class MyPluginCommand implements PathCommand {
 	private Button btn4;
 	private Button btnOk;
 	private ComboBox<String> comboBox;
+	private RadioButton rBtn3; 
+	private RadioButton rBtn5;
+	private ToggleGroup tGroup;
+	private VBox vBox;
 	
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -321,13 +333,14 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void rightBorder(){
+		
 		comboBox.getItems().add("Morph");
 		comboBox.getItems().add("Edge"); 
 		comboBox.getSelectionModel().select(0);
 		comboBox.valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
 				if(selected.contains("Morph")){
-
+					
 				}
 				else if(selected.contains("Edge")){
 					vb.setDisable(true);
@@ -340,7 +353,24 @@ public class MyPluginCommand implements PathCommand {
 
 			}    
 		});
-		root.setRight(comboBox);
+		//rBtn3.setText("3er Matrix");
+		//rBtn5.setText("5er Matrix");
+		tGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
+	           @Override
+	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
+	               // Has selection.
+	               if (tGroup.getSelectedToggle() != null) {
+	                   RadioButton button = (RadioButton) tGroup.getSelectedToggle();
+	                   System.out.println("Button: " + button.getText());
+	                   
+	               }
+	           }
+	       });
+		
+		rBtn3.setToggleGroup(tGroup);
+		rBtn5.setToggleGroup(tGroup);
+		vBox.getChildren().addAll(comboBox,rBtn3,rBtn5);
+		root.setRight(vBox);
 	}
 	
 	@SuppressWarnings("restriction")
@@ -350,6 +380,7 @@ public class MyPluginCommand implements PathCommand {
 		root.setMargin(b, new Insets(20, 20, 20, 20));
 		root.setCenter(b);
 	}
+	
 	
 	@SuppressWarnings("restriction")
 	private void leftBorder(){
@@ -426,6 +457,10 @@ public class MyPluginCommand implements PathCommand {
 		btn4 = new Button();
 		btnOk = new Button();
 		comboBox = new ComboBox<String>();
+		rBtn3 = new RadioButton();
+		rBtn5 = new RadioButton();
+		vBox = new VBox();
+		tGroup = new ToggleGroup();
 	}
 
 	private void fillGridKernel(boolean[][] kernel) {
