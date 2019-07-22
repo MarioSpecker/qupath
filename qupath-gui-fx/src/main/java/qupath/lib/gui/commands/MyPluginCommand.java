@@ -68,35 +68,46 @@ public class MyPluginCommand implements PathCommand {
 
 		dialog = createDialog();
 		dialog.showAndWait();
-		
 
-		BufferedImage img = qupath.getViewer().getThumbnail();			//create Image
+		BufferedImage img = qupath.getViewer().getThumbnail(); // create Image
 		argb = new int[img.getHeight() * img.getWidth()];
-		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
-		
-		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
+		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0,
+				img.getWidth());
+
 		toGrayScale(img.getHeight(), img.getWidth(), argb);
-		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
+		int threshold = getIterativeThreshold(argb, img.getWidth(),
+				img.getHeight());
 		binarize(argb, img.getWidth(), img.getHeight(), threshold);
-		
-		
-		BufferedImage resizedImage = new BufferedImage(img.getWidth()+4, img.getHeight()+4, BufferedImage.TYPE_INT_ARGB);
-		prepareImageForDilatation(image, array);
-		resizedImage.setRGB(2, 2, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
-		
-		
-		
-		
-		//dilatation(resizedImage.getWidth(), resizedImage.getHeight(), resizedARGB, argb);
-		//drawImage(img.getHeight(), img.getWidth(), argb);
-		//drawImage(resizedImage.getHeight(), resizedImage.getWidth(), argb);
-//		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
-//		toGrayScale(img.getHeight(), img.getWidth(), argb);
-//		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
-//		binarize(argb, img.getWidth(), img.getHeight(), threshold);
-//		drawImage(img.getHeight(), img.getWidth(), argb);
+
+		BufferedImage dilatationImage = new BufferedImage(img.getWidth() + 4,
+				img.getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
+		int[] dilatArray = new int[dilatationImage.getHeight()
+				* dilatationImage.getWidth()];
+		prepareImageForDilatation(dilatationImage, dilatArray, argb,
+				img.getWidth(), img.getHeight());
+		dilatation(dilatationImage.getWidth(), dilatationImage.getHeight(),
+				dilatArray, argb);
+		drawImage(img.getHeight(), img.getWidth(), argb);
+
+		BufferedImage erosionImage = new BufferedImage(img.getWidth() + 4,
+				img.getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
+		int[] erosionArray = new int[erosionImage.getHeight()
+				* erosionImage.getWidth()];
+		prepareImageForErosion(erosionImage, erosionArray, argb,
+				erosionImage.getWidth(), erosionImage.getWidth());
+
+		// dilatation(resizedImage.getWidth(), resizedImage.getHeight(),
+		// resizedARGB, argb);
+		// drawImage(img.getHeight(), img.getWidth(), argb);
+		// drawImage(resizedImage.getHeight(), resizedImage.getWidth(), argb);
+		// img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0,
+		// img.getWidth());
+		// toGrayScale(img.getHeight(), img.getWidth(), argb);
+		// int threshold = getIterativeThreshold(argb, img.getWidth(),
+		// img.getHeight());
+		// binarize(argb, img.getWidth(), img.getHeight(), threshold);
+		// drawImage(img.getHeight(), img.getWidth(), argb);
 	}
-	
 
 	private void drawImage(int height, int width, int[] rgb) {
 		qupath.getViewer().getThumbnail()
@@ -110,7 +121,7 @@ public class MyPluginCommand implements PathCommand {
 			for (int x = 0; x < width; x++) {
 				int pos = y * width + x;
 				int pix = argb[pos] & 0xff;
-				
+
 				if (pix < threshold) {
 					pix = 0x00000000;
 				} else {
@@ -121,7 +132,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 
-	private void toGrayScale(int height, int width, int [] rgb) {
+	private void toGrayScale(int height, int width, int[] rgb) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				int pos = y * width + x;
@@ -165,7 +176,6 @@ public class MyPluginCommand implements PathCommand {
 		} while (Math.abs((newThreshold - currentThreshold)) >= 1);
 		return newThreshold;
 	}
-	
 
 	private boolean[][] createKernel(double radius) {
 		boolean[][] k = new boolean[gridSize][gridSize];
@@ -185,43 +195,74 @@ public class MyPluginCommand implements PathCommand {
 		}
 		return k;
 	}
-	
-	private void prepareImageForDilatation(BufferedImage image, int[] array){
-		image.createGraphics().setColor(java.awt.Color.white);
-		image.createGraphics().fillRect ( 0, 0, image.getWidth(), image.getHeight() );
-		array = new int[image.getHeight()*image.getWidth()];	
-		image.getRGB(0, 0, image.getWidth(), image.getHeight(), array, 0, image.getWidth());
-		
+
+	private void prepareImageForDilatation(BufferedImage dilatImage, int[] dilatArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {		
+		dilatImage.createGraphics().setColor(java.awt.Color.white);
+		dilatImage.createGraphics().fillRect(0, 0, dilatImage.getWidth(), dilatImage.getHeight());
+		dilatImage.getRGB(0, 0, dilatImage.getWidth(), dilatImage.getHeight(), dilatArray, 0, dilatImage.getWidth());
+		dilatImage.setRGB(2, 2, widthDefaultImage, heightDefaultImage, argbArray, 0, widthDefaultImage);
+
 	}
 
-	private void dilatation(int width, int height, int[] resizedArray, int[] rgb){
-		for(int y=2;y<height-2;y++){
-			for(int x=2;x<width-2;x++){
-				int pos = y*width+x;
+	private void dilatation(int width, int height, int[] resizedArray, int[] rgb) {
+		for (int y = 2; y < height - 2; y++) {
+			for (int x = 2; x < width - 2; x++) {
+				int pos = y * width + x;
 				int pixelCenter = resizedArray[pos] & 0xff;
-				if(pixelCenter==255){
-					for(int j=-getHalfKernelSize(); j<=getHalfKernelSize();j++){
-						for(int i=-getHalfKernelSize(); i<=getHalfKernelSize();i++){
-							if(kernel[i+getHalfKernelSize()][j+getHalfKernelSize()]==true){
-								int pix = resizedArray[(y-j)*width+(x-i)]& 0xff;
-								if(pix==0){
+				if (pixelCenter == 255) {
+					for (int j = -getHalfKernelSize(); j <= getHalfKernelSize(); j++) {
+						for (int i = -getHalfKernelSize(); i <= getHalfKernelSize(); i++) {
+							if (kernel[i + getHalfKernelSize()][j
+									+ getHalfKernelSize()] == true) {
+								int pix = resizedArray[(y - j) * width
+										+ (x - i)] & 0xff;
+								if (pix == 0) {
 									int black = 0x000000;
-									rgb[(y-getHalfKernelSize())*(width-4)+(x-getHalfKernelSize())] = (0xFF<<24) | (black<<16) | (black<<8) | black;
+									rgb[(y - getHalfKernelSize()) * (width - 4)
+											+ (x - getHalfKernelSize())] = (0xFF << 24)
+											| (black << 16)
+											| (black << 8)
+											| black;
 									break;
 								}
 							}
 						}
 					}
-					
+
 				}
 			}
 		}
 	}
-	
-	private void erosion(int width, int height, int[] resizedArray, int[] rgb){
-	
+
+	private void prepareImageForErosion(BufferedImage erosionImage,
+			int[] erosionArray, int[] argbArray, int widthDefaultImage,
+			int heightDefaultImage) {
+		erosionImage.createGraphics().setColor(java.awt.Color.black);
+		erosionImage.createGraphics().fillRect(0, 0, erosionImage.getWidth(),
+				erosionImage.getHeight());
+		erosionImage.getRGB(0, 0, erosionImage.getWidth(),
+				erosionImage.getHeight(), erosionArray, 0,
+				erosionImage.getWidth());
+		erosionImage.setRGB(2, 2, widthDefaultImage, heightDefaultImage,
+				argbArray, 0, widthDefaultImage);
 	}
-	
+
+	private void erosion(int width, int height, int[] resizedArray, int[] rgb) {
+		for (int y = 2; y < height - 2; y++) {
+			for (int x = 2; x < width - 2; x++) {
+				int pos = y * width + x;
+				int pixelCenter = resizedArray[pos] & 0xff;
+				if (pixelCenter == 0) {
+					for (int j = -getHalfKernelSize(); j <= getHalfKernelSize(); j++) {
+						for (int i = -getHalfKernelSize(); i <= getHalfKernelSize(); i++) {
+							
+						}
+					}
+				}
+			}
+		}
+	}
+
 	public void printKernel(boolean[][] kernel) {
 		for (boolean[] xS : kernel) {
 			for (boolean v : xS) {
@@ -232,8 +273,8 @@ public class MyPluginCommand implements PathCommand {
 		}
 
 	}
-	
-	private int getHalfKernelSize(){
+
+	private int getHalfKernelSize() {
 		return 2;
 	}
 
@@ -326,7 +367,6 @@ public class MyPluginCommand implements PathCommand {
 		return p;
 	}
 
-	
 	private void fillGridKernel(boolean[][] kernel) {
 		for (int i = 0; i < gridSize; i++) {
 			for (int j = 0; j < gridSize; j++) {
