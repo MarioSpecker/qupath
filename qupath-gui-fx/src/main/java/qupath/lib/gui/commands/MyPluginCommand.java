@@ -16,6 +16,8 @@ import javax.swing.text.html.ImageView;
 
 
 
+
+
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -49,9 +51,11 @@ import javafx.scene.shape.*;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.ToggleGroup;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.io.ByteArrayInputStream;
+
 import javafx.scene.control.ToggleButton;
 
 
@@ -81,6 +85,7 @@ public class MyPluginCommand implements PathCommand {
 	private RadioButton rBtn5;
 	private ToggleGroup tGroup;
 	private VBox vBox;
+	private HBox hBox;
 	
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -213,6 +218,23 @@ public class MyPluginCommand implements PathCommand {
 		}
 		return k;
 	}
+	
+	
+		
+	private int[][] createLaPlaceFilter(int size){
+		int[]array3 = new int[]{0,-1,0,-1,4,-1,0,-1,0};
+		int []array5= new int[]{};
+		int[][] result= new int[size][size];
+		for(int i=0;i<size;i++){
+			for(int j=0;j<size;j++){
+				int pos = i*size+j;
+				if(size==2){
+					result[j][i] = array3[pos];
+				}else
+					result[j][i] = array5[pos];
+			}
+		}
+	}
 
 	private void prepareImageForDilatation(BufferedImage dilatImage, int[] dilatArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {		
 		dilatImage.createGraphics().setColor(java.awt.Color.WHITE);
@@ -310,7 +332,7 @@ public class MyPluginCommand implements PathCommand {
 		dialog.initOwner(qupath.getStage());
 		dialog.setTitle("My Plugin Dialog");
 
-		dialog.setScene(new Scene(addBorderPane(), 500, 500));
+		dialog.setScene(new Scene(addBorderPane(), 500, 350));
 		return dialog;
 	}
 
@@ -318,29 +340,25 @@ public class MyPluginCommand implements PathCommand {
 	private BorderPane addBorderPane() {
 
 
-
-		
-
-		
-		center();
-		leftBorder();
-		rightBorder();
-
+		createCenter();
+		createLeftBorder();
+		createRightBorder();
+		createBottom();
 		return root;
 
 	}
 	
 	
 	@SuppressWarnings("restriction")
-	private void rightBorder(){
-		
+	private void createRightBorder(){
+		vBox.setPadding(new Insets(10,10,10,10));
 		comboBox.getItems().add("Morph");
 		comboBox.getItems().add("Edge"); 
 		comboBox.getSelectionModel().select(0);
 		comboBox.valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
 				if(selected.contains("Morph")){
-					
+					vb.setDisable(false);
 				}
 				else if(selected.contains("Edge")){
 					vb.setDisable(true);
@@ -353,8 +371,8 @@ public class MyPluginCommand implements PathCommand {
 
 			}    
 		});
-		//rBtn3.setText("3er Matrix");
-		//rBtn5.setText("5er Matrix");
+		rBtn3.setText("3er Matrix");
+		rBtn5.setText("5er Matrix");
 		tGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
 	           @Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
@@ -370,11 +388,12 @@ public class MyPluginCommand implements PathCommand {
 		rBtn3.setToggleGroup(tGroup);
 		rBtn5.setToggleGroup(tGroup);
 		vBox.getChildren().addAll(comboBox,rBtn3,rBtn5);
+		
 		root.setRight(vBox);
 	}
 	
 	@SuppressWarnings("restriction")
-	private void center(){
+	private void createCenter(){
 		Pane b = makeGrid(gridSize);
 		root.setAlignment(b, Pos.CENTER);
 		root.setMargin(b, new Insets(20, 20, 20, 20));
@@ -383,7 +402,24 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 	@SuppressWarnings("restriction")
-	private void leftBorder(){
+	private void createBottom(){
+		
+		btnOk.setText("OK");
+		btnOk.setOnAction(actionEvent -> {
+			dialog.close();
+		});
+		hBox.setAlignment(Pos.CENTER);
+		hBox.setPadding(new Insets(10,10,10,10));
+		hBox.setHgrow(btnOk, Priority.ALWAYS);
+		btnOk.setMaxWidth(Double.MAX_VALUE);
+		hBox.getChildren().add(btnOk);
+		
+		root.setBottom(hBox);
+		
+	}
+	
+	@SuppressWarnings("restriction")
+	private void createLeftBorder(){
 		
 		btn1.setText("Button 1");
 		btn1.setOnAction(actionEvent -> {
@@ -391,7 +427,6 @@ public class MyPluginCommand implements PathCommand {
 			kernel = this.createKernel(radius);
 			this.fillGridKernel(kernel);
 		});
-		Button btn2 = new Button();
 		btn2.setText("Button 2");
 		btn2.setOnAction(actionEvent -> {
 			double radius = 1.5;
@@ -399,7 +434,6 @@ public class MyPluginCommand implements PathCommand {
 			this.fillGridKernel(kernel);
 
 		});
-		Button btn3 = new Button();
 		btn3.setText("Button 3");
 		btn3.setOnAction(actionEvent -> {
 			double radius = 2.0;
@@ -422,6 +456,7 @@ public class MyPluginCommand implements PathCommand {
 		btn3.setMaxHeight(Double.MAX_VALUE);
 		btn4.setMaxHeight(Double.MAX_VALUE);
 		vb.getChildren().addAll(btn1, btn2, btn3, btn4);
+		vb.setPadding(new Insets(10,10,10,10));
 		root.setLeft(vb);
 	}
 	
@@ -429,11 +464,14 @@ public class MyPluginCommand implements PathCommand {
 
 	@SuppressWarnings("restriction")
 	public static Pane makeGrid(int size) {
-		double width = 300 / size;
+		double width = 250 / size;
 		Pane p = new Pane();
+		Text[][] t = new Text[5][5];
 		// rec = new Rectangle[size][size];
 		for (int i = 0; i < size; i++) {
+			
 			for (int j = 0; j < size; j++) {
+				t[i][j] = new Text("1");
 				rec[i][j] = new Rectangle();
 				rec[i][j].setX(i * width);
 				rec[i][j].setY(j * width);
@@ -441,9 +479,14 @@ public class MyPluginCommand implements PathCommand {
 				rec[i][j].setHeight(width);
 				rec[i][j].setFill(null);
 				rec[i][j].setStroke(Color.BLACK);
-				p.getChildren().add(rec[i][j]);
+				t[i][j].setX(width*j);
+				t[i][j].setY(width*i);
+				t[i][j].setText("wwww");
+				p.getChildren().addAll(rec[i][j],t[i][j]);
 			}
 		}
+		//t.
+		//p.getChildren().add(t);
 		return p;
 	}
 	
@@ -459,8 +502,9 @@ public class MyPluginCommand implements PathCommand {
 		comboBox = new ComboBox<String>();
 		rBtn3 = new RadioButton();
 		rBtn5 = new RadioButton();
-		vBox = new VBox();
+		vBox = new VBox(15);
 		tGroup = new ToggleGroup();
+		hBox = new HBox();
 	}
 
 	private void fillGridKernel(boolean[][] kernel) {
