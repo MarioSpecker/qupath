@@ -70,9 +70,13 @@ public class MyPluginCommand implements PathCommand {
 	private Stage dialog;
 	private QuPathGUI qupath;
 	private int[] argb;
+	
+
 	private static Rectangle[][] rec;
 	private boolean[][] kernel;
 	private int[] resizedARGB;
+	private int[] arrayLaPlace;
+	private int[][] laPlaceFilter;
 	private VBox vb;
 	private BorderPane root;
 	private Button btn1;
@@ -81,12 +85,16 @@ public class MyPluginCommand implements PathCommand {
 	private Button btn4;
 	private Button btnOk;
 	private ComboBox<String> comboBox;
-	private RadioButton rBtn3; 
-	private RadioButton rBtn5;
+	private RadioButton radioBtn3; 
+	private RadioButton radioBtn5;
 	private ToggleGroup tGroup;
 	private VBox vBox;
 	private HBox hBox;
+	private BufferedImage img;
+	private int threshold;
 	
+	
+
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
 		this.gridSize = 5;
@@ -100,25 +108,37 @@ public class MyPluginCommand implements PathCommand {
 	public void run() {
 		initNodes();
 		
+		img = qupath.getViewer().getThumbnail(); // create Image
+		argb = new int[img.getHeight() * img.getWidth()];
+		arrayLaPlace = new int[img.getHeight() * img.getWidth()];
 		
+		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
+		toGrayScale(getImg().getHeight(), getImg().getWidth(), argb);
+		System.arraycopy(getArgb(), 0, getArrayLaPlace(), 0, getArgb().length);
+		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
 		
 		dialog = createDialog();
 		dialog.showAndWait();
 
-		BufferedImage img = qupath.getViewer().getThumbnail(); // create Image
-		argb = new int[img.getHeight() * img.getWidth()];
-		img.getRGB(0, 0, img.getWidth(), img.getHeight(), argb, 0, img.getWidth());
 		
-		toGrayScale(img.getHeight(), img.getWidth(), argb);
-		int threshold = getIterativeThreshold(argb, img.getWidth(), img.getHeight());
-		binarize(argb, img.getWidth(), img.getHeight(), threshold);
+		drawImage(getImg().getHeight(),getImg().getWidth(), getArgb());
+		
+		
+		
+		
+		
+		
+		//binarize(argb, img.getWidth(), img.getHeight(), threshold);
 		//drawImage(img.getHeight(), img.getWidth(), argb);
 		
-		BufferedImage dilatationImage = new BufferedImage(img.getWidth() + 4, img.getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
-		int[] dilatArray = new int[dilatationImage.getHeight() * dilatationImage.getWidth()];
-		prepareImageForDilatation(dilatationImage, dilatArray, argb, img.getWidth(), img.getHeight());
-		dilatation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, argb, img.getWidth());
-		drawImage(img.getHeight(), img.getWidth(), argb);
+		
+		
+		
+//		BufferedImage dilatationImage = new BufferedImage(img.getWidth() + 4, img.getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
+//		int[] dilatArray = new int[dilatationImage.getHeight() * dilatationImage.getWidth()];
+//		prepareImageForDilatation(dilatationImage, dilatArray, argb, img.getWidth(), img.getHeight());
+//		dilatation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, argb, img.getWidth());
+//		drawImage(img.getHeight(), img.getWidth(), argb);
 
 		
 		
@@ -143,7 +163,7 @@ public class MyPluginCommand implements PathCommand {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				int pos = y * width + x;
-				int pix = argb[pos] & 0xff;
+				int pix = rgb[pos] & 0xff;
 
 				if (pix < threshold) {
 					pix = 0x00000000;
@@ -223,7 +243,7 @@ public class MyPluginCommand implements PathCommand {
 		
 	private int[][] createLaPlaceFilter(int size){
 		int[]array3 = new int[]{0,-1,0,-1,4,-1,0,-1,0};
-		int []array5= new int[]{};
+		int []array5= new int[]{0,0,-1,0,0,0,-1,-2,-1,0,-1,-2,16,-2,-1,0,-1,-2,-1,0,0,0,-1,0,0};
 		int[][] result= new int[size][size];
 		for(int i=0;i<size;i++){
 			for(int j=0;j<size;j++){
@@ -234,8 +254,10 @@ public class MyPluginCommand implements PathCommand {
 					result[j][i] = array5[pos];
 			}
 		}
+		return result;
 	}
 
+	
 	private void prepareImageForDilatation(BufferedImage dilatImage, int[] dilatArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {		
 		dilatImage.createGraphics().setColor(java.awt.Color.WHITE);
 		dilatImage.createGraphics().fillRect(0, 0, dilatImage.getWidth(), dilatImage.getHeight());
@@ -261,7 +283,7 @@ public class MyPluginCommand implements PathCommand {
 				if (pixelCenter == 255) {
 					for (int j = -getHalfKernelSize(); j <= getHalfKernelSize(); j++) {
 						for (int i = -getHalfKernelSize(); i <= getHalfKernelSize(); i++) {
-							if (kernel[i + getHalfKernelSize()][j + getHalfKernelSize()] == true) {
+							if (getKernel()[i + getHalfKernelSize()][j + getHalfKernelSize()] == true) {
 								int pix = resizedArray[(y - j) * width+ (x - i)] & 0xff;
 								if (pix == 0) {
 									int black = 0x000000;
@@ -324,7 +346,47 @@ public class MyPluginCommand implements PathCommand {
 		return 2;
 	}
 
+	private void edgeDetection(int width, int height, int sizeBorder, int[] argb, int[] arrayLP, int threshold){
+		for (int y = sizeBorder; y < height-sizeBorder; y++) {
+			for (int x = sizeBorder; x<width -sizeBorder; x++) { 
+				int pixel;
+				if(sizeBorder==1)
+				pixel = getPixelFromLP3(x, y, width, argb);
+				else
+				pixel = 	
+				
+				
+				if(pixel<0)pixel=0;
+				else if(pixel>255)pixel=255;
+				arrayLP[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
+			}
+		}
+	}
+	
+	private int getPixelFromLP3(int x, int y, int width, int[] argb, ){
+		int pix2 = argb[(y-1)*width+x]&0xff;
+		int pix4 = argb[y*width+(x-1)]&0xff;
+		int pix5 = argb[y*width+x]&0xff;
+		int pix6 = argb[(y)*width+(x+1)]&0xff;
+		int pix8 = argb[(y+1)*width+(x)]&0xff;
+		int pixel = (-pix2 - pix4 + 4*pix5 -pix6 - pix8);
+		return pixel;
+	}
+	
+	private int getPixelFromLP5(int x, int y, int width, int[] argb, ){
+		int pix2 = argb[(y-1)*width+x]&0xff;
+		int pix4 = argb[y*width+(x-1)]&0xff;
+		int pix5 = argb[y*width+x]&0xff;
+		int pix6 = argb[(y)*width+(x+1)]&0xff;
+		int pix8 = argb[(y+1)*width+(x)]&0xff;
+		int pixel = (-pix2 - pix4 + 4*pix5 -pix6 - pix8);
+		return pixel;
+	}
+	
+	
 	// Graphic....
+
+	
 
 	@SuppressWarnings("restriction")
 	protected Stage createDialog() {
@@ -338,8 +400,6 @@ public class MyPluginCommand implements PathCommand {
 
 	@SuppressWarnings("restriction")
 	private BorderPane addBorderPane() {
-
-
 		createCenter();
 		createLeftBorder();
 		createRightBorder();
@@ -351,46 +411,52 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createRightBorder(){
-		vBox.setPadding(new Insets(10,10,10,10));
-		comboBox.getItems().add("Morph");
-		comboBox.getItems().add("Edge"); 
-		comboBox.getSelectionModel().select(0);
-		comboBox.valueProperty().addListener(new ChangeListener<String>() {
+		getvBox().setPadding(new Insets(10,10,10,10));
+		getComboBox().getItems().add("Morph");
+		getComboBox().getItems().add("Edge"); 
+		getComboBox().getSelectionModel().select(0);
+		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
 				if(selected.contains("Morph")){
 					vb.setDisable(false);
 				}
 				else if(selected.contains("Edge")){
 					vb.setDisable(true);
-
-
 				}
 				else{
 
 				}
-
 			}    
 		});
-		rBtn3.setText("3er Matrix");
-		rBtn5.setText("5er Matrix");
+		getradioBtn3().setText("3er Matrix");
+		getradioBtn5().setText("5er Matrix");
 		tGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
 	           @Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
-	               // Has selection.
 	               if (tGroup.getSelectedToggle() != null) {
+	            	   
 	                   RadioButton button = (RadioButton) tGroup.getSelectedToggle();
 	                   System.out.println("Button: " + button.getText());
-	                   
+	                   int size=0;
+	                   if(button.getText().contains("3er Matrix")){
+	                	   size=1;
+	                	   setLaPlaceFilter(createLaPlaceFilter(size));
+	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), size , getArgb(), getArrayLaPlace(), getThreshold());
+	                   }else{
+	                	   size=2;
+	                	   setLaPlaceFilter(createLaPlaceFilter(size));
+	                   }
 	               }
 	           }
 	       });
-		
-		rBtn3.setToggleGroup(tGroup);
-		rBtn5.setToggleGroup(tGroup);
-		vBox.getChildren().addAll(comboBox,rBtn3,rBtn5);
-		
+		getradioBtn3().setToggleGroup(tGroup);
+		getradioBtn5().setToggleGroup(tGroup);
+		vBox.getChildren().addAll(comboBox,getradioBtn3(),getradioBtn5());
 		root.setRight(vBox);
 	}
+	
+	
+	
 	
 	@SuppressWarnings("restriction")
 	private void createCenter(){
@@ -403,7 +469,6 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createBottom(){
-		
 		btnOk.setText("OK");
 		btnOk.setOnAction(actionEvent -> {
 			dialog.close();
@@ -413,14 +478,11 @@ public class MyPluginCommand implements PathCommand {
 		hBox.setHgrow(btnOk, Priority.ALWAYS);
 		btnOk.setMaxWidth(Double.MAX_VALUE);
 		hBox.getChildren().add(btnOk);
-		
 		root.setBottom(hBox);
-		
 	}
 	
 	@SuppressWarnings("restriction")
 	private void createLeftBorder(){
-		
 		btn1.setText("Button 1");
 		btn1.setOnAction(actionEvent -> {
 			double radius = 1.0;
@@ -469,7 +531,6 @@ public class MyPluginCommand implements PathCommand {
 		Text[][] t = new Text[5][5];
 		// rec = new Rectangle[size][size];
 		for (int i = 0; i < size; i++) {
-			
 			for (int j = 0; j < size; j++) {
 				t[i][j] = new Text("1");
 				rec[i][j] = new Rectangle();
@@ -485,8 +546,6 @@ public class MyPluginCommand implements PathCommand {
 				p.getChildren().addAll(rec[i][j],t[i][j]);
 			}
 		}
-		//t.
-		//p.getChildren().add(t);
 		return p;
 	}
 	
@@ -500,8 +559,8 @@ public class MyPluginCommand implements PathCommand {
 		btn4 = new Button();
 		btnOk = new Button();
 		comboBox = new ComboBox<String>();
-		rBtn3 = new RadioButton();
-		rBtn5 = new RadioButton();
+		radioBtn3 = new RadioButton();
+		radioBtn5 = new RadioButton();
 		vBox = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
@@ -516,7 +575,202 @@ public class MyPluginCommand implements PathCommand {
 					rec[i][j].setFill(Color.WHITE);
 				}
 			}
-
 		}
+	}
+	
+	
+	
+	
+	
+	public BufferedImage getImg() {
+		return img;
+	}
+
+	public void setImg(BufferedImage img) {
+		this.img = img;
+	}
+
+	public int[] getArgb() {
+		return argb;
+	}
+
+	public void setArgb(int[] argb) {
+		this.argb = argb;
+	}
+
+	public boolean[][] getKernel() {
+		return kernel;
+	}
+
+	public void setKernel(boolean[][] kernel) {
+		this.kernel = kernel;
+	}
+
+	public int[] getArrayLaPlace() {
+		return arrayLaPlace;
+	}
+
+	public void setArrayLaPlace(int[] arrayLaPlace) {
+		this.arrayLaPlace = arrayLaPlace;
+	}
+
+	public int[][] getLaPlaceFilter() {
+		return laPlaceFilter;
+	}
+
+	public void setLaPlaceFilter(int[][] laPlaceFilter) {
+		this.laPlaceFilter = laPlaceFilter;
+	}
+	
+	public static int getGridSize() {
+		return gridSize;
+	}
+
+	public static void setGridSize(int gridSize) {
+		MyPluginCommand.gridSize = gridSize;
+	}
+
+	public Stage getDialog() {
+		return dialog;
+	}
+
+	public void setDialog(Stage dialog) {
+		this.dialog = dialog;
+	}
+
+	public QuPathGUI getQupath() {
+		return qupath;
+	}
+
+	public void setQupath(QuPathGUI qupath) {
+		this.qupath = qupath;
+	}
+
+	public static Rectangle[][] getRec() {
+		return rec;
+	}
+
+	public static void setRec(Rectangle[][] rec) {
+		MyPluginCommand.rec = rec;
+	}
+
+	public int[] getResizedARGB() {
+		return resizedARGB;
+	}
+
+	public void setResizedARGB(int[] resizedARGB) {
+		this.resizedARGB = resizedARGB;
+	}
+
+	public VBox getVb() {
+		return vb;
+	}
+
+	public void setVb(VBox vb) {
+		this.vb = vb;
+	}
+
+	public BorderPane getRoot() {
+		return root;
+	}
+
+	public void setRoot(BorderPane root) {
+		this.root = root;
+	}
+
+	public Button getBtn1() {
+		return btn1;
+	}
+
+	public void setBtn1(Button btn1) {
+		this.btn1 = btn1;
+	}
+
+	public Button getBtn2() {
+		return btn2;
+	}
+
+	public void setBtn2(Button btn2) {
+		this.btn2 = btn2;
+	}
+
+	public Button getBtn3() {
+		return btn3;
+	}
+
+	public void setBtn3(Button btn3) {
+		this.btn3 = btn3;
+	}
+
+	public Button getBtn4() {
+		return btn4;
+	}
+
+	public void setBtn4(Button btn4) {
+		this.btn4 = btn4;
+	}
+
+	public Button getBtnOk() {
+		return btnOk;
+	}
+
+	public void setBtnOk(Button btnOk) {
+		this.btnOk = btnOk;
+	}
+
+	public ComboBox<String> getComboBox() {
+		return comboBox;
+	}
+
+	public void setComboBox(ComboBox<String> comboBox) {
+		this.comboBox = comboBox;
+	}
+
+	public RadioButton getradioBtn3() {
+		return radioBtn3;
+	}
+
+	public void setradioBtn3(RadioButton radioBtn3) {
+		this.radioBtn3 = radioBtn3;
+	}
+
+	public RadioButton getradioBtn5() {
+		return radioBtn5;
+	}
+
+	public void setradioBtn5(RadioButton radioBtn5) {
+		this.radioBtn5 = radioBtn5;
+	}
+
+	public ToggleGroup gettGroup() {
+		return tGroup;
+	}
+
+	public void settGroup(ToggleGroup tGroup) {
+		this.tGroup = tGroup;
+	}
+
+	public VBox getvBox() {
+		return vBox;
+	}
+
+	public void setvBox(VBox vBox) {
+		this.vBox = vBox;
+	}
+
+	public HBox gethBox() {
+		return hBox;
+	}
+
+	public void sethBox(HBox hBox) {
+		this.hBox = hBox;
+	}
+	
+	public int getThreshold() {
+		return threshold;
+	}
+
+	public void setThreshold(int threshold) {
+		this.threshold = threshold;
 	}
 }
