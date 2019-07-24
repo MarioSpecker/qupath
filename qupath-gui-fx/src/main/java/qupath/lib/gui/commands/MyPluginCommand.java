@@ -18,6 +18,7 @@ import javax.swing.text.html.ImageView;
 
 
 
+
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -77,7 +78,7 @@ public class MyPluginCommand implements PathCommand {
 	private int[] resizedARGB;
 	private int[] arrayLaPlace;
 	private int[][] laPlaceFilter;
-	private VBox vb;
+	private VBox vBoxRightBorder;
 	private BorderPane root;
 	private Button btn1;
 	private Button btn2;
@@ -94,7 +95,8 @@ public class MyPluginCommand implements PathCommand {
 	private int threshold;
 	private static Text[][] textForGrid;
 	private static int widthOfGrid;
-	
+	private static String[][] lPF3Matrix;
+	private static String[][] lPF5Matrix;
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -103,6 +105,8 @@ public class MyPluginCommand implements PathCommand {
 		this.rec = new Rectangle[gridSize][gridSize];
 		this.textForGrid = new Text[gridSize][gridSize];
 		this.widthOfGrid = 250;
+		this.lPF3Matrix = new String[][]{{"0","0","0","0","0"},{"0","0","-1","0","0"},{"0","-1","4","-1","0"},{"0","0","-1","0","0"},{"0","0","0","0","0"}};
+		this.lPF5Matrix = new String[][]{{"0","0","-1","0","0"},{"0","-1","-2","-1","0"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
 
 	}
 
@@ -165,7 +169,7 @@ public class MyPluginCommand implements PathCommand {
 		qupath.getViewer().repaintEntireImage();
 	}
 
-	@SuppressWarnings("unused")
+	
 	private void binarize(int[] rgb, int height, int width, int threshold) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
@@ -248,16 +252,11 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 		
-	
-
-	
 	private void prepareImageForDilatation(BufferedImage dilatImage, int[] dilatArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {		
 		dilatImage.createGraphics().setColor(java.awt.Color.WHITE);
 		dilatImage.createGraphics().fillRect(0, 0, dilatImage.getWidth(), dilatImage.getHeight());
 		dilatImage.setRGB(2, 2, widthDefaultImage, heightDefaultImage, argbArray, 0, widthDefaultImage);
 		dilatImage.getRGB(0, 0, dilatImage.getWidth(), dilatImage.getHeight(), dilatArray, 0, dilatImage.getWidth());
-		
-
 	}
 	
 	private void prepareImageForErosion(BufferedImage erosionImage, int[] erosionArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {
@@ -356,9 +355,6 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	//int []array5= new int[]{0,0,-1,0,0,0,-1,-2,-1,0,-1,-2,16,-2,-1,0,-1,-2,-1,0,0,0,-1,0,0};
-		
-	
 	private int getPixelFromLP3(int x, int y, int width, int[] argb){
 		int pix2 = argb[(y-1)*width+x]&0xff;
 		int pix4 = argb[y*width+(x-1)]&0xff;
@@ -387,6 +383,47 @@ public class MyPluginCommand implements PathCommand {
 				- pix24 - pix31 -(2+pix32) -pix33 - pix42);
 		return pixel;
 	}
+	
+	private void gaussFilter(int width, int height, int sizeBorder, int[] argb){
+		for (int y = sizeBorder; y < height-sizeBorder; y++) {
+			for (int x = sizeBorder; x<width -sizeBorder; x++) {
+				int pixel;
+				if(sizeBorder==1)
+					pixel = getPixelFromGauss3Matrix(x, y, sizeBorder, argb);
+				else
+					pixel = getPixelFromGauss5Matrix(x, y, sizeBorder, argb) ;
+
+			}
+		}
+	}
+	
+	private int getPixelFromGauss3Matrix(int x, int y, int width, int[] argb){
+		int pix00 = argb[(y-1)*width+(x-1)];
+		int pix01 = argb[(y-1)*width+(x)];
+		int pix02 = argb[(y-1)*width+(x+1)];
+		int pix10 = argb[(y)*width+(x-1)];
+		int pix11 = argb[(y)*width+(x)];
+		int pix12 = argb[(y)*width+(x+1)];
+		int pix20 = argb[(y+1)*width+(x-1)];
+		int pix21 = argb[(y+1)*width+(x)];
+		int pix22 = argb[(y+1)*width+(x+1)];
+		return 0;
+	}
+	
+	private int getPixelFromGauss5Matrix(int x, int y, int width, int[] argb){
+		int pix00 = argb[(y-1)*width+(x-1)];
+		int pix01 = argb[(y-1)*width+(x)];
+		int pix20 = argb[(y)*width+(x-2)];
+		int pix21 = argb[(y)*width+(x-1)];
+		int pix22 = argb[(y)*width+(x)];
+		int pix23 = argb[(y)*width+(x+1)];
+		int pix24 = argb[(y)*width+(x+2)];
+		int pix21 = argb[(y+1)*width+(x)];
+		int pix22 = argb[(y+1)*width+(x+1)];
+		return 0;
+	}
+	
+	
 	
 	
 	
@@ -425,10 +462,10 @@ public class MyPluginCommand implements PathCommand {
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
 				if(selected.contains("Morph")){
-					getVb().setDisable(false);
+					getvBoxRightBorder().setDisable(false);
 				}
 				else if(selected.contains("Edge")){
-					getVb().setDisable(true);
+					getvBoxRightBorder().setDisable(true);
 				}
 				else{
 
@@ -444,13 +481,17 @@ public class MyPluginCommand implements PathCommand {
 	            	   
 	                   RadioButton button = (RadioButton) tGroup.getSelectedToggle();
 	                   System.out.println("Button: " + button.getText());
-	                   int size=0;
+	                   int sizeBorder=0;
 	                   if(button.getText().contains("3er Matrix")){
-	                	   size=1;
-	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), size , getArgb(), getArrayLaPlace(), getThreshold());
+	                	   sizeBorder=1;
+	                	   cleanGrid();
+	                	   fillGridWithText(button.getText());
+	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), sizeBorder , getArgb(), getArrayLaPlace(), getThreshold());
 	                   }else{
-	                	   size=2;
-	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), size , getArgb(), getArrayLaPlace(), getThreshold());
+	                	   sizeBorder=2;
+	                	   cleanGrid();
+	                	   fillGridWithText(button.getText());
+	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), sizeBorder , getArgb(), getArrayLaPlace(), getThreshold());
 	                   }
 	               }
 	           }
@@ -489,46 +530,41 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createLeftBorder(){
-		btn1.setText("Button 1");
-		btn1.setOnAction(actionEvent -> {
+		getBtn1().setText("Button 1");
+		getBtn1().setOnAction(actionEvent -> {
 			double radius = 1.0;
-			kernel = this.createKernel(radius);
+			setKernel(this.createKernel(radius));
 			this.fillGridKernel(kernel);
-			this.fillGridWithText(getGridSize());
 		});
-		btn2.setText("Button 2");
-		btn2.setOnAction(actionEvent -> {
+		getBtn2().setText("Button 2");
+		getBtn2().setOnAction(actionEvent -> {
 			double radius = 1.5;
-			kernel = this.createKernel(radius);
+			setKernel(this.createKernel(radius));
 			this.fillGridKernel(kernel);
-			this.fillGridWithText(getGridSize());
 		});
-		btn3.setText("Button 3");
-		btn3.setOnAction(actionEvent -> {
+		getBtn3().setText("Button 3");
+		getBtn3().setOnAction(actionEvent -> {
 			double radius = 2.0;
-			kernel = this.createKernel(radius);
+			setKernel(this.createKernel(radius));
 			this.fillGridKernel(kernel);
-			this.fillGridWithText(getGridSize());
-
 		});
-		btn4.setText("Button 4");
-		btn4.setOnAction(actionEvent -> {
+		getBtn4().setText("Button 4");
+		getBtn4().setOnAction(actionEvent -> {
 			double radius = 2.7;
 			setKernel(this.createKernel(radius));
 			this.fillGridKernel(getKernel());
-			this.fillGridWithText(getGridSize());
 		});
-		getVb().setVgrow(btn1, Priority.ALWAYS);
-		getVb().setVgrow(btn2, Priority.ALWAYS);
-		getVb().setVgrow(btn3, Priority.ALWAYS);
-		getVb().setVgrow(btn4, Priority.ALWAYS);
+		getvBoxRightBorder().setVgrow(btn1, Priority.ALWAYS);
+		getvBoxRightBorder().setVgrow(btn2, Priority.ALWAYS);
+		getvBoxRightBorder().setVgrow(btn3, Priority.ALWAYS);
+		getvBoxRightBorder().setVgrow(btn4, Priority.ALWAYS);
 		getBtn1().setMaxHeight(Double.MAX_VALUE);
 		getBtn2().setMaxHeight(Double.MAX_VALUE);
 		getBtn3().setMaxHeight(Double.MAX_VALUE);
 		getBtn4().setMaxHeight(Double.MAX_VALUE);
-		getVb().getChildren().addAll(btn1, btn2, btn3, btn4);
-		vb.setPadding(new Insets(10,10,10,10));
-		root.setLeft(vb);
+		getvBoxRightBorder().getChildren().addAll(getBtn1(), getBtn2(),getBtn3(), getBtn4());
+		getvBoxRightBorder().setPadding(new Insets(10,10,10,10));
+		root.setLeft(getvBoxRightBorder());
 	}
 	
 	
@@ -539,8 +575,6 @@ public class MyPluginCommand implements PathCommand {
 	public static Pane makeGrid(int size) {
 		double width = getWidthOfGrid() / size;
 		Pane p = new Pane();
-		//Text[][] t = new Text[5][5];
-		// rec = new Rectangle[size][size];
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
 				getTextForGrid()[i][j] = new Text();
@@ -551,7 +585,6 @@ public class MyPluginCommand implements PathCommand {
 				getRec()[i][j].setHeight(width);
 				getRec()[i][j].setFill(null);
 				getRec()[i][j].setStroke(Color.BLACK);
-				
 				p.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);
 			}
 		}
@@ -572,20 +605,38 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	@SuppressWarnings("restriction")
-	private void fillGridWithText(int size){
-		double width = getWidthOfGrid() / size;
+	private void fillGridWithText(String name){
+		double width = getWidthOfGrid() / getGridSize();
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
 				getTextForGrid()[i][j].setX(i * width+30);
 				getTextForGrid()[i][j].setY(j * width+30);
-				getTextForGrid()[i][j].setText("2");
+				switch(name){
+				case "3er Matrix":
+					cleanGrid();
+					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
+					break;
+				case "5er Matrik":
+					cleanGrid();
+					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
+					break;
+				}
+			}
+		}
+	}
+	
+	private void cleanGrid(){
+		for (int i = 0; i < getGridSize(); i++) {
+			for (int j = 0; j < getGridSize(); j++) {
+				getRec()[i][j].setFill(Color.WHITE);
+				getTextForGrid()[i][j].setText("");
 			}
 		}
 	}
 	
 	@SuppressWarnings("restriction")
 	private void initNodes(){
-		vb = new VBox();
+		vBoxRightBorder = new VBox();
 		root = new BorderPane();
 		btn1 = new Button();
 		btn2 = new Button();
@@ -602,13 +653,10 @@ public class MyPluginCommand implements PathCommand {
 	}
 
 	
+	
+	
+	
 
-	
-	
-	
-	
-	
-	
 	public BufferedImage getImg() {
 		return img;
 	}
@@ -689,13 +737,28 @@ public class MyPluginCommand implements PathCommand {
 		this.resizedARGB = resizedARGB;
 	}
 
-	public VBox getVb() {
-		return vb;
+	
+
+	public VBox getvBoxRightBorder() {
+		return vBoxRightBorder;
 	}
 
-	public void setVb(VBox vb) {
-		this.vb = vb;
+
+
+
+
+	public void setvBoxRightBorder(VBox vBoxRightBorder) {
+		this.vBoxRightBorder = vBoxRightBorder;
 	}
+
+
+
+
+
+
+
+
+
 
 	public BorderPane getRoot() {
 		return root;
@@ -834,5 +897,25 @@ public class MyPluginCommand implements PathCommand {
 		this.widthOfGrid = widthOfGrid;
 	}
 
+
+
+
+	public static String[][] getlPF5Matrix() {
+		return lPF5Matrix;
+	}
+
+
+	public static void setlPF5Matrix(String[][] is) {
+		MyPluginCommand.lPF5Matrix = is;
+	}
+
+
+	public static String[][] getlPF3Matrix() {
+		return lPF3Matrix;
+	}
+
+	public static void setlPF3Matrix(String[][] lPF3Matrix) {
+		MyPluginCommand.lPF3Matrix = lPF3Matrix;
+	}
 	
 }
