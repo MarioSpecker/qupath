@@ -97,6 +97,7 @@ public class MyPluginCommand implements PathCommand {
 	private static int widthOfGrid;
 	private static String[][] lPF3Matrix;
 	private static String[][] lPF5Matrix;
+	
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -107,7 +108,7 @@ public class MyPluginCommand implements PathCommand {
 		this.widthOfGrid = 250;
 		this.lPF3Matrix = new String[][]{{"0","0","0","0","0"},{"0","0","-1","0","0"},{"0","-1","4","-1","0"},{"0","0","-1","0","0"},{"0","0","0","0","0"}};
 		this.lPF5Matrix = new String[][]{{"0","0","-1","0","0"},{"0","-1","-2","-1","0"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
-
+		
 	}
 
 	
@@ -384,6 +385,7 @@ public class MyPluginCommand implements PathCommand {
 		return pixel;
 	}
 	
+	
 	private void gaussFilter(int width, int height, int sizeBorder, int[] argb){
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) {
@@ -410,16 +412,23 @@ public class MyPluginCommand implements PathCommand {
 		return 0;
 	}
 	
-	private int getPixelFromGauss5Matrix(int x, int y, int width, int[] argb){
-		int pix00 = argb[(y-1)*width+(x-1)];
-		int pix01 = argb[(y-1)*width+(x)];
-		int pix20 = argb[(y)*width+(x-2)];
-		int pix21 = argb[(y)*width+(x-1)];
-		int pix22 = argb[(y)*width+(x)];
-		int pix23 = argb[(y)*width+(x+1)];
-		int pix24 = argb[(y)*width+(x+2)];
-		int pix21 = argb[(y+1)*width+(x)];
-		int pix22 = argb[(y+1)*width+(x+1)];
+	private int getPixelFromGauss5Matrix(int x, int y, int width, int gridSizr, int sizeBorder, int[] argb){
+		int [][] arrayWithPixelValues = new int[][];
+		for (int j = -sizeBorder; j < sizeBorder; j++) {
+			for (int i = -sizeBorder; i<sizeBorder; i++) {
+				arrayWithPixelValues[i+2][j+2] = argb[(y-j)*width+(x-i)];
+				
+			}
+		}
+//		int pix00 = argb[(y-1)*width+(x-1)];
+//		int pix01 = argb[(y-1)*width+(x)];
+//		int pix20 = argb[(y)*width+(x-2)];
+//		int pix21 = argb[(y)*width+(x-1)];
+//		int pix22 = argb[(y)*width+(x)];
+//		int pix23 = argb[(y)*width+(x+1)];
+//		int pix24 = argb[(y)*width+(x+2)];
+//		int pix21 = argb[(y+1)*width+(x)];
+//		int pix22 = argb[(y+1)*width+(x+1)];
 		return 0;
 	}
 	
