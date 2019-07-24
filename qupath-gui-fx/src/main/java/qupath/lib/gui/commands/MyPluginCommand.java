@@ -92,7 +92,8 @@ public class MyPluginCommand implements PathCommand {
 	private HBox hBox;
 	private BufferedImage img;
 	private int threshold;
-	
+	private static Text[][] textForGrid;
+	private static int widthOfGrid;
 	
 
 	public MyPluginCommand(final QuPathGUI qupath) {
@@ -100,8 +101,14 @@ public class MyPluginCommand implements PathCommand {
 		this.gridSize = 5;
 		this.kernel = new boolean[gridSize][gridSize];
 		this.rec = new Rectangle[gridSize][gridSize];
+		this.textForGrid = new Text[gridSize][gridSize];
+		this.widthOfGrid = 250;
 
 	}
+
+	
+
+
 
 	@SuppressWarnings("restriction")
 	@Override
@@ -283,7 +290,6 @@ public class MyPluginCommand implements PathCommand {
 							}
 						}
 					}
-
 				}
 			}
 		}
@@ -383,7 +389,9 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	// Graphic....
+	
+	
+	// ++++++++++++++++++++++++++++++++++++++Graphic....+++++++++++++++++++++++++++++++++++++++++
 
 	
 
@@ -417,10 +425,10 @@ public class MyPluginCommand implements PathCommand {
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
 				if(selected.contains("Morph")){
-					vb.setDisable(false);
+					getVb().setDisable(false);
 				}
 				else if(selected.contains("Edge")){
-					vb.setDisable(true);
+					getVb().setDisable(true);
 				}
 				else{
 
@@ -458,7 +466,7 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createCenter(){
-		Pane b = makeGrid(gridSize);
+		Pane b = makeGrid(getGridSize());
 		root.setAlignment(b, Pos.CENTER);
 		root.setMargin(b, new Insets(20, 20, 20, 20));
 		root.setCenter(b);
@@ -486,65 +494,93 @@ public class MyPluginCommand implements PathCommand {
 			double radius = 1.0;
 			kernel = this.createKernel(radius);
 			this.fillGridKernel(kernel);
+			this.fillGridWithText(getGridSize());
 		});
 		btn2.setText("Button 2");
 		btn2.setOnAction(actionEvent -> {
 			double radius = 1.5;
 			kernel = this.createKernel(radius);
 			this.fillGridKernel(kernel);
-
+			this.fillGridWithText(getGridSize());
 		});
 		btn3.setText("Button 3");
 		btn3.setOnAction(actionEvent -> {
 			double radius = 2.0;
 			kernel = this.createKernel(radius);
 			this.fillGridKernel(kernel);
+			this.fillGridWithText(getGridSize());
 
 		});
 		btn4.setText("Button 4");
 		btn4.setOnAction(actionEvent -> {
 			double radius = 2.7;
-			kernel = this.createKernel(radius);
-			this.fillGridKernel(kernel);
+			setKernel(this.createKernel(radius));
+			this.fillGridKernel(getKernel());
+			this.fillGridWithText(getGridSize());
 		});
-		vb.setVgrow(btn1, Priority.ALWAYS);
-		vb.setVgrow(btn2, Priority.ALWAYS);
-		vb.setVgrow(btn3, Priority.ALWAYS);
-		vb.setVgrow(btn4, Priority.ALWAYS);
-		btn1.setMaxHeight(Double.MAX_VALUE);
-		btn2.setMaxHeight(Double.MAX_VALUE);
-		btn3.setMaxHeight(Double.MAX_VALUE);
-		btn4.setMaxHeight(Double.MAX_VALUE);
-		vb.getChildren().addAll(btn1, btn2, btn3, btn4);
+		getVb().setVgrow(btn1, Priority.ALWAYS);
+		getVb().setVgrow(btn2, Priority.ALWAYS);
+		getVb().setVgrow(btn3, Priority.ALWAYS);
+		getVb().setVgrow(btn4, Priority.ALWAYS);
+		getBtn1().setMaxHeight(Double.MAX_VALUE);
+		getBtn2().setMaxHeight(Double.MAX_VALUE);
+		getBtn3().setMaxHeight(Double.MAX_VALUE);
+		getBtn4().setMaxHeight(Double.MAX_VALUE);
+		getVb().getChildren().addAll(btn1, btn2, btn3, btn4);
 		vb.setPadding(new Insets(10,10,10,10));
 		root.setLeft(vb);
 	}
 	
 	
+	
+	
 
 	@SuppressWarnings("restriction")
 	public static Pane makeGrid(int size) {
-		double width = 250 / size;
+		double width = getWidthOfGrid() / size;
 		Pane p = new Pane();
-		Text[][] t = new Text[5][5];
+		//Text[][] t = new Text[5][5];
 		// rec = new Rectangle[size][size];
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
-				t[i][j] = new Text("1");
-				rec[i][j] = new Rectangle();
-				rec[i][j].setX(i * width);
-				rec[i][j].setY(j * width);
-				rec[i][j].setWidth(width);
-				rec[i][j].setHeight(width);
-				rec[i][j].setFill(null);
-				rec[i][j].setStroke(Color.BLACK);
-				t[i][j].setX(width*j);
-				t[i][j].setY(width*i);
-				t[i][j].setText("wwww");
-				p.getChildren().addAll(rec[i][j],t[i][j]);
+				getTextForGrid()[i][j] = new Text();
+				getRec()[i][j] = new Rectangle();
+				getRec()[i][j].setX(i * width);
+				getRec()[i][j].setY(j * width);
+				getRec()[i][j].setWidth(width);
+				getRec()[i][j].setHeight(width);
+				getRec()[i][j].setFill(null);
+				getRec()[i][j].setStroke(Color.BLACK);
+				
+				p.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);
 			}
 		}
 		return p;
+	}
+	
+	
+	private void fillGridKernel(boolean[][] kernel) {
+		for (int i = 0; i < getGridSize(); i++) {
+			for (int j = 0; j < getGridSize(); j++) {
+				if (getKernel()[i][j] == true) {
+					getRec()[i][j].setFill(Color.RED);
+				} else {
+					getRec()[i][j].setFill(Color.WHITE);
+				}
+			}
+		}
+	}
+	
+	@SuppressWarnings("restriction")
+	private void fillGridWithText(int size){
+		double width = getWidthOfGrid() / size;
+		for (int i = 0; i < getGridSize(); i++) {
+			for (int j = 0; j < getGridSize(); j++) {
+				getTextForGrid()[i][j].setX(i * width+30);
+				getTextForGrid()[i][j].setY(j * width+30);
+				getTextForGrid()[i][j].setText("2");
+			}
+		}
 	}
 	
 	@SuppressWarnings("restriction")
@@ -562,19 +598,12 @@ public class MyPluginCommand implements PathCommand {
 		vBox = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
+		
 	}
 
-	private void fillGridKernel(boolean[][] kernel) {
-		for (int i = 0; i < gridSize; i++) {
-			for (int j = 0; j < gridSize; j++) {
-				if (kernel[i][j] == true) {
-					rec[i][j].setFill(Color.RED);
-				} else {
-					rec[i][j].setFill(Color.WHITE);
-				}
-			}
-		}
-	}
+	
+
+	
 	
 	
 	
@@ -771,4 +800,39 @@ public class MyPluginCommand implements PathCommand {
 	public void setThreshold(int threshold) {
 		this.threshold = threshold;
 	}
+	
+	public RadioButton getRadioBtn3() {
+		return radioBtn3;
+	}
+
+	public void setRadioBtn3(RadioButton radioBtn3) {
+		this.radioBtn3 = radioBtn3;
+	}
+
+	public RadioButton getRadioBtn5() {
+		return radioBtn5;
+	}
+
+	public void setRadioBtn5(RadioButton radioBtn5) {
+		this.radioBtn5 = radioBtn5;
+	}
+	
+	public static Text[][] getTextForGrid() {
+		return textForGrid;
+	}
+
+	public static void setTextForGrid(Text[][] textForGrid) {
+		MyPluginCommand.textForGrid = textForGrid;
+	}
+	
+	public static int getWidthOfGrid() {
+		return widthOfGrid;
+	}
+
+
+	public void setWidthOfGrid(int widthOfGrid) {
+		this.widthOfGrid = widthOfGrid;
+	}
+
+	
 }
