@@ -386,50 +386,50 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	private void gaussFilter(int width, int height, int sizeBorder, int[] argb){
+	private void gaussFilter(int width, int height, int sizeBorder, int gridSize, int[] argb){
+		int pixel;
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) {
-				int pixel;
+				
 				if(sizeBorder==1)
 					pixel = getPixelFromGauss3Matrix(x, y, sizeBorder, argb);
 				else
-					pixel = getPixelFromGauss5Matrix(x, y, sizeBorder, argb) ;
-
+					pixel = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb) ;
 			}
 		}
+		if(pixel<0)pixel=0;
+		else if(pixel>255)pixel=255;
+		argb[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
 	}
 	
 	private int getPixelFromGauss3Matrix(int x, int y, int width, int[] argb){
-		int pix00 = argb[(y-1)*width+(x-1)];
-		int pix01 = argb[(y-1)*width+(x)];
-		int pix02 = argb[(y-1)*width+(x+1)];
-		int pix10 = argb[(y)*width+(x-1)];
-		int pix11 = argb[(y)*width+(x)];
-		int pix12 = argb[(y)*width+(x+1)];
-		int pix20 = argb[(y+1)*width+(x-1)];
-		int pix21 = argb[(y+1)*width+(x)];
-		int pix22 = argb[(y+1)*width+(x+1)];
-		return 0;
+		int pix00 = argb[(y-1)*width+(x-1)]&0xff;
+		int pix01 = argb[(y-1)*width+(x)]&0xff;
+		int pix02 = argb[(y-1)*width+(x+1)]&0xff;
+		int pix10 = argb[(y)*width+(x-1)]&0xff;
+		int pix11 = argb[(y)*width+(x)]&0xff;
+		int pix12 = argb[(y)*width+(x+1)]&0xff;
+		int pix20 = argb[(y+1)*width+(x-1)]&0xff;
+		int pix21 = argb[(y+1)*width+(x)]&0xff;
+		int pix22 = argb[(y+1)*width+(x+1)]&0xff;
+		int pixel = (1/16*pix00)+(2/16*pix01)+(1/16*pix02)+(2/16*pix10)+(4/16*pix11)+(2/16*pix12)+(1/16*pix20)+(2/16*pix21)+(1/16*pix22);
+		return pixel;
 	}
 	
-	private int getPixelFromGauss5Matrix(int x, int y, int width, int gridSizr, int sizeBorder, int[] argb){
-		int [][] arrayWithPixelValues = new int[][];
+	private int getPixelFromGauss5Matrix(int x, int y, int width, int gridSize, int sizeBorder, int[] argb){
+		int [][] a= new int[gridSize][gridSize];
 		for (int j = -sizeBorder; j < sizeBorder; j++) {
 			for (int i = -sizeBorder; i<sizeBorder; i++) {
-				arrayWithPixelValues[i+2][j+2] = argb[(y-j)*width+(x-i)];
-				
+				a[i+2][j+2] = argb[(y-j)*width+(x-i)]&0xff;	
 			}
 		}
-//		int pix00 = argb[(y-1)*width+(x-1)];
-//		int pix01 = argb[(y-1)*width+(x)];
-//		int pix20 = argb[(y)*width+(x-2)];
-//		int pix21 = argb[(y)*width+(x-1)];
-//		int pix22 = argb[(y)*width+(x)];
-//		int pix23 = argb[(y)*width+(x+1)];
-//		int pix24 = argb[(y)*width+(x+2)];
-//		int pix21 = argb[(y+1)*width+(x)];
-//		int pix22 = argb[(y+1)*width+(x+1)];
-		return 0;
+		int pixel = (1/273*a[0][0])+(4/273*a[0][1])+(7/273*a[0][2])+(4/273*a[0][3])+(1/273*a[0][4])
+				+(4/273*a[1][0])+(16/273*a[1][1])+(26/273*a[1][2])+(16/273*a[1][3])+(4/273*a[1][4])
+				+(7/273*a[2][0])+(26/273*a[2][1])+(41/273*a[2][2])+(26/273*a[2][3])+(7/273*a[2][4])
+				+(4/273*a[3][0])+(16/273*a[3][1])+(26/273*a[3][2])+(16/273*a[3][3])+(4/273*a[3][4])
+				+(1/273*a[4][0])+(4/273*a[4][1])+(7/273*a[4][2])+(4/273*a[4][3])+(1/273*a[4][4]);
+		
+		return pixel;
 	}
 	
 	
