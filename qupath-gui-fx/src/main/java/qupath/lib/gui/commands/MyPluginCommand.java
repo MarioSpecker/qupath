@@ -121,7 +121,7 @@ public class MyPluginCommand implements PathCommand {
 		dialog.showAndWait();
 
 		
-		drawImage(getImg().getHeight(),getImg().getWidth(), getArgb());
+		drawImage(getImg().getHeight(),getImg().getWidth(), getArrayLaPlace());
 		
 		
 		
@@ -241,21 +241,7 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 		
-	private int[][] createLaPlaceFilter(int size){
-		int[]array3 = new int[]{0,-1,0,-1,4,-1,0,-1,0};
-		int []array5= new int[]{0,0,-1,0,0,0,-1,-2,-1,0,-1,-2,16,-2,-1,0,-1,-2,-1,0,0,0,-1,0,0};
-		int[][] result= new int[size][size];
-		for(int i=0;i<size;i++){
-			for(int j=0;j<size;j++){
-				int pos = i*size+j;
-				if(size==2){
-					result[j][i] = array3[pos];
-				}else
-					result[j][i] = array5[pos];
-			}
-		}
-		return result;
-	}
+	
 
 	
 	private void prepareImageForDilatation(BufferedImage dilatImage, int[] dilatArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {		
@@ -353,7 +339,7 @@ public class MyPluginCommand implements PathCommand {
 				if(sizeBorder==1)
 				pixel = getPixelFromLP3(x, y, width, argb);
 				else
-				pixel = 	
+				pixel = getPixelFromLP5(x, y, width, argb);	
 				
 				
 				if(pixel<0)pixel=0;
@@ -363,7 +349,11 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
-	private int getPixelFromLP3(int x, int y, int width, int[] argb, ){
+	
+	//int []array5= new int[]{0,0,-1,0,0,0,-1,-2,-1,0,-1,-2,16,-2,-1,0,-1,-2,-1,0,0,0,-1,0,0};
+		
+	
+	private int getPixelFromLP3(int x, int y, int width, int[] argb){
 		int pix2 = argb[(y-1)*width+x]&0xff;
 		int pix4 = argb[y*width+(x-1)]&0xff;
 		int pix5 = argb[y*width+x]&0xff;
@@ -373,13 +363,22 @@ public class MyPluginCommand implements PathCommand {
 		return pixel;
 	}
 	
-	private int getPixelFromLP5(int x, int y, int width, int[] argb, ){
-		int pix2 = argb[(y-1)*width+x]&0xff;
-		int pix4 = argb[y*width+(x-1)]&0xff;
-		int pix5 = argb[y*width+x]&0xff;
-		int pix6 = argb[(y)*width+(x+1)]&0xff;
-		int pix8 = argb[(y+1)*width+(x)]&0xff;
-		int pixel = (-pix2 - pix4 + 4*pix5 -pix6 - pix8);
+	private int getPixelFromLP5(int x, int y, int width, int[] argb){
+		int pix02 = argb[(y-2)*width+x]&0xff;
+		int pix11 = argb[(y-1)*width+(x-1)]&0xff;
+		int pix12 = argb[(y-1)*width+x]&0xff;
+		int pix13 = argb[(y-1)*width+(x+1)]&0xff;
+		int pix20 = argb[y*width+(x-2)]&0xff;
+		int pix21 = argb[y*width+(x-1)]&0xff;
+		int pix22 = argb[y*width+x]&0xff;
+		int pix23 = argb[y*width+(x+1)]&0xff;
+		int pix24 = argb[y*width+(x+2)]&0xff;
+		int pix31 = argb[(y+1)*width+(x-1)]&0xff;
+		int pix32 = argb[(y+1)*width+x]&0xff;
+		int pix33 = argb[(y+1)*width+(x+1)]&0xff;
+		int pix42 = argb[(y+2)*width+x]&0xff;
+		int pixel = (-pix02 - pix11 -(2*pix12)- pix13 -pix20 - (2*pix21) +(16*pix22) -(2*pix23)
+				- pix24 - pix31 -(2+pix32) -pix33 - pix42);
 		return pixel;
 	}
 	
@@ -440,11 +439,10 @@ public class MyPluginCommand implements PathCommand {
 	                   int size=0;
 	                   if(button.getText().contains("3er Matrix")){
 	                	   size=1;
-	                	   setLaPlaceFilter(createLaPlaceFilter(size));
 	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), size , getArgb(), getArrayLaPlace(), getThreshold());
 	                   }else{
 	                	   size=2;
-	                	   setLaPlaceFilter(createLaPlaceFilter(size));
+	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), size , getArgb(), getArrayLaPlace(), getThreshold());
 	                   }
 	               }
 	           }
