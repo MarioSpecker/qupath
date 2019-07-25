@@ -89,7 +89,7 @@ public class MyPluginCommand implements PathCommand {
 	private RadioButton radioBtn3; 
 	private RadioButton radioBtn5;
 	private ToggleGroup tGroup;
-	private VBox vBox;
+	private VBox vBoxLeftBorder;
 	private HBox hBox;
 	private BufferedImage img;
 	private int threshold;
@@ -97,7 +97,9 @@ public class MyPluginCommand implements PathCommand {
 	private static int widthOfGrid;
 	private static String[][] lPF3Matrix;
 	private static String[][] lPF5Matrix;
-	
+	private static String[][] gaussMatrix3x3;
+	private static String[][] gaussMatrix5x5;
+	private String choiceOperation;
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -108,7 +110,9 @@ public class MyPluginCommand implements PathCommand {
 		this.widthOfGrid = 250;
 		this.lPF3Matrix = new String[][]{{"0","0","0","0","0"},{"0","0","-1","0","0"},{"0","-1","4","-1","0"},{"0","0","-1","0","0"},{"0","0","0","0","0"}};
 		this.lPF5Matrix = new String[][]{{"0","0","-1","0","0"},{"0","-1","-2","-1","0"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
-		
+		this.gaussMatrix3x3 = new String[][]{{"0","0","0","0","0"},{"0","1","2","1","0"},{"0","2","4","2","0"},{"0","1","2","1","0"},{"0","0","0","0","0"}};
+		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
+		this.choiceOperation  = "DEFAULT";
 	}
 
 	
@@ -121,11 +125,10 @@ public class MyPluginCommand implements PathCommand {
 		initNodes();
 		
 		img = qupath.getViewer().getThumbnail(); // create Image
-		argb = new int[img.getHeight() * img.getWidth()];
-		arrayLaPlace = new int[img.getHeight() * img.getWidth()];
-		
+		argb = new int[getImg().getHeight() * getImg().getWidth()];
+		arrayLaPlace = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
-		toGrayScale(getImg().getHeight(), getImg().getWidth(), argb);
+		
 		System.arraycopy(getArgb(), 0, getArrayLaPlace(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
 		
@@ -133,37 +136,51 @@ public class MyPluginCommand implements PathCommand {
 		dialog.showAndWait();
 
 		
-		drawImage(getImg().getHeight(),getImg().getWidth(), getArrayLaPlace());
 		
 		
 		
-		
-		
-		
-		//binarize(argb, img.getWidth(), img.getHeight(), threshold);
-		//drawImage(img.getHeight(), img.getWidth(), argb);
-		
-		
-		
-		
-//		BufferedImage dilatationImage = new BufferedImage(img.getWidth() + 4, img.getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
-//		int[] dilatArray = new int[dilatationImage.getHeight() * dilatationImage.getWidth()];
-//		prepareImageForDilatation(dilatationImage, dilatArray, argb, img.getWidth(), img.getHeight());
-//		dilatation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, argb, img.getWidth());
-//		drawImage(img.getHeight(), img.getWidth(), argb);
+		switch(getChoiceOperation()){
+		case "BINARY":
+			setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
+			binarize(getArgb(), getImg().getHeight(), getImg().getWidth(), getThreshold());
+			break;
+		case "GRAYSCALE":
+			toGrayScale(getImg().getHeight(), getImg().getWidth(), getArgb());
+			break;
+		case "DILATATION":
+			BufferedImage dilatationImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
+			int[] dilatArray = new int[dilatationImage.getHeight() * dilatationImage.getWidth()];
+			prepareImageForDilatation(dilatationImage, dilatArray, getArgb(), getImg().getWidth(), getImg().getHeight());
+			dilatation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, getArgb(), getImg().getWidth());
+			break;
+		case "EROSION":
+			BufferedImage erosionImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
+			int[] erosionArray = new int[erosionImage.getHeight() * erosionImage.getWidth()];
+			prepareImageForErosion(erosionImage, erosionArray, getArgb(), getImg().getWidth(), getImg().getHeight());
+			erosion(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, getArgb(), getImg().getWidth());
+			break;
+		case "GAUSS":
+			break;
+		case "EDGE":
+			break;
+		}
 
-		
-		
-//		BufferedImage erosionImage = new BufferedImage(img.getWidth() + 4, img.getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
-//		int[] erosionArray = new int[erosionImage.getHeight() * erosionImage.getWidth()];
-//		prepareImageForErosion(erosionImage, erosionArray, argb, img.getWidth(), img.getHeight());
-//		
-//		erosion(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, argb, img.getWidth());
-//		drawImage(img.getHeight(), img.getWidth(), argb);
-		
-		
-		
+		drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 	}
+		
+		
+	
+		
+		
+		
+		
+	
+
+	
+
+
+
+
 
 	private void drawImage(int height, int width, int[] rgb) {
 		qupath.getViewer().getThumbnail().setRGB(0, 0, width, height, rgb, 0, width);
@@ -334,20 +351,16 @@ public class MyPluginCommand implements PathCommand {
 
 	}
 
-	private int getHalfKernelSize() {
-		return 2;
-	}
+	
 
 	private void edgeDetection(int width, int height, int sizeBorder, int[] argb, int[] arrayLP, int threshold){
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) { 
 				int pixel;
 				if(sizeBorder==1)
-				pixel = getPixelFromLP3(x, y, width, argb);
+					pixel = getPixelFromLP3(x, y, width, argb);
 				else
-				pixel = getPixelFromLP5(x, y, width, argb);	
-				
-				
+					pixel = getPixelFromLP5(x, y, width, argb);	
 				if(pixel<0)pixel=0;
 				else if(pixel>255)pixel=255;
 				arrayLP[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
@@ -390,16 +403,16 @@ public class MyPluginCommand implements PathCommand {
 		int pixel;
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) {
-				
+				argb[y] =1;
 				if(sizeBorder==1)
 					pixel = getPixelFromGauss3Matrix(x, y, sizeBorder, argb);
 				else
 					pixel = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb) ;
+				if(pixel<0)pixel=0;
+				else if(pixel>255)pixel=255;
+				argb[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
 			}
 		}
-		if(pixel<0)pixel=0;
-		else if(pixel>255)pixel=255;
-		argb[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
 	}
 	
 	private int getPixelFromGauss3Matrix(int x, int y, int width, int[] argb){
@@ -428,7 +441,6 @@ public class MyPluginCommand implements PathCommand {
 				+(7/273*a[2][0])+(26/273*a[2][1])+(41/273*a[2][2])+(26/273*a[2][3])+(7/273*a[2][4])
 				+(4/273*a[3][0])+(16/273*a[3][1])+(26/273*a[3][2])+(16/273*a[3][3])+(4/273*a[3][4])
 				+(1/273*a[4][0])+(4/273*a[4][1])+(7/273*a[4][2])+(4/273*a[4][3])+(1/273*a[4][4]);
-		
 		return pixel;
 	}
 	
@@ -464,21 +476,17 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createRightBorder(){
-		getvBox().setPadding(new Insets(10,10,10,10));
-		getComboBox().getItems().add("Morph");
 		getComboBox().getItems().add("Edge"); 
+		getComboBox().getItems().add("Gauss"); 
+		getComboBox().getItems().add("Dilatation"); 
+		getComboBox().getItems().add("Erosion"); 
+		getComboBox().getItems().add("Binary"); 
+		getComboBox().getItems().add("Grayscale"); 
 		getComboBox().getSelectionModel().select(0);
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
-				if(selected.contains("Morph")){
-					getvBoxRightBorder().setDisable(false);
-				}
-				else if(selected.contains("Edge")){
-					getvBoxRightBorder().setDisable(true);
-				}
-				else{
-
-				}
+				
+				selectOperation(selected);
 			}    
 		});
 		getradioBtn3().setText("3er Matrix");
@@ -487,7 +495,6 @@ public class MyPluginCommand implements PathCommand {
 	           @Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
 	               if (tGroup.getSelectedToggle() != null) {
-	            	   
 	                   RadioButton button = (RadioButton) tGroup.getSelectedToggle();
 	                   System.out.println("Button: " + button.getText());
 	                   int sizeBorder=0;
@@ -507,11 +514,62 @@ public class MyPluginCommand implements PathCommand {
 	       });
 		getradioBtn3().setToggleGroup(tGroup);
 		getradioBtn5().setToggleGroup(tGroup);
-		vBox.getChildren().addAll(comboBox,getradioBtn3(),getradioBtn5());
-		root.setRight(vBox);
+		getvBoxRightBorder().setPadding(new Insets(10,10,10,10));
+		getvBoxRightBorder().setMargin(getradioBtn3(), new Insets(15,5,5,0));
+		getvBoxRightBorder().setMargin(getradioBtn5(), new Insets(5,5,5,0));
+		getvBoxRightBorder().getChildren().addAll(getComboBox(),getradioBtn3(),getradioBtn5());
+		root.setRight(getvBoxRightBorder());
 	}
 	
 	
+	private void selectOperation(String selected){
+		if(selected.contains("Edge")){
+			updateViewFilter();
+			setChoiceOperation("EDGE");
+		}
+		else if(selected.contains("Gauss")){
+			updateViewFilter();
+			setChoiceOperation("GAUSS");
+		}
+		else if(selected.contains("Dilatation")){
+			updateViewMorph();
+			setChoiceOperation("DILATATION");
+		}else if(selected.contains("Erosion")){
+			updateViewMorph();
+			setChoiceOperation("EROSION");
+		}
+		else if(selected.contains("Binary")){
+			updateViewImgTyp();
+			setChoiceOperation("BINARY");
+		}
+		else if(selected.contains("Grayscale")){
+			updateViewImgTyp();
+			setChoiceOperation("GRAYSCALE");
+		}
+	}
+	
+	@SuppressWarnings("restriction")
+	private void updateViewMorph(){
+		getvBoxLeftBorder().setDisable(false);
+		getradioBtn3().setDisable(true);
+		getradioBtn5().setDisable(true);
+		cleanGrid();
+	}
+	
+	@SuppressWarnings("restriction")
+	private void updateViewImgTyp(){
+		getradioBtn3().setDisable(true);
+		getradioBtn5().setDisable(true);
+		getvBoxLeftBorder().setDisable(true);
+		cleanGrid();
+	}
+	
+	@SuppressWarnings("restriction")
+	private void updateViewFilter(){
+		getvBoxLeftBorder().setDisable(true);
+		getradioBtn3().setDisable(false);
+		getradioBtn5().setDisable(false);
+	}
 	
 	
 	@SuppressWarnings("restriction")
@@ -525,17 +583,18 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createBottom(){
-		btnOk.setText("OK");
-		btnOk.setOnAction(actionEvent -> {
+		getBtnOk().setText("OK");
+		getBtnOk().setOnAction(actionEvent -> {
 			dialog.close();
 		});
-		hBox.setAlignment(Pos.CENTER);
-		hBox.setPadding(new Insets(10,10,10,10));
-		hBox.setHgrow(btnOk, Priority.ALWAYS);
-		btnOk.setMaxWidth(Double.MAX_VALUE);
-		hBox.getChildren().add(btnOk);
-		root.setBottom(hBox);
+		gethBox().setAlignment(Pos.CENTER);
+		gethBox().setPadding(new Insets(10,10,10,10));
+		gethBox().setHgrow(btnOk, Priority.ALWAYS);
+		getBtnOk().setMaxWidth(Double.MAX_VALUE);
+		gethBox().getChildren().add(getBtnOk());
+		root.setBottom(gethBox());
 	}
+	
 	
 	@SuppressWarnings("restriction")
 	private void createLeftBorder(){
@@ -563,17 +622,17 @@ public class MyPluginCommand implements PathCommand {
 			setKernel(this.createKernel(radius));
 			this.fillGridKernel(getKernel());
 		});
-		getvBoxRightBorder().setVgrow(btn1, Priority.ALWAYS);
-		getvBoxRightBorder().setVgrow(btn2, Priority.ALWAYS);
-		getvBoxRightBorder().setVgrow(btn3, Priority.ALWAYS);
-		getvBoxRightBorder().setVgrow(btn4, Priority.ALWAYS);
+		getvBoxLeftBorder().setVgrow(btn1, Priority.ALWAYS);
+		getvBoxLeftBorder().setVgrow(btn2, Priority.ALWAYS);
+		getvBoxLeftBorder().setVgrow(btn3, Priority.ALWAYS);
+		getvBoxLeftBorder().setVgrow(btn4, Priority.ALWAYS);
 		getBtn1().setMaxHeight(Double.MAX_VALUE);
 		getBtn2().setMaxHeight(Double.MAX_VALUE);
 		getBtn3().setMaxHeight(Double.MAX_VALUE);
 		getBtn4().setMaxHeight(Double.MAX_VALUE);
-		getvBoxRightBorder().getChildren().addAll(getBtn1(), getBtn2(),getBtn3(), getBtn4());
-		getvBoxRightBorder().setPadding(new Insets(10,10,10,10));
-		root.setLeft(getvBoxRightBorder());
+		getvBoxLeftBorder().getChildren().addAll(getBtn1(), getBtn2(),getBtn3(), getBtn4());
+		getvBoxLeftBorder().setPadding(new Insets(10,10,10,10));
+		root.setLeft(getvBoxLeftBorder());
 	}
 	
 	
@@ -615,18 +674,18 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String name){
+		cleanGrid();
 		double width = getWidthOfGrid() / getGridSize();
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
-				getTextForGrid()[i][j].setX(i * width+30);
-				getTextForGrid()[i][j].setY(j * width+30);
+				getTextForGrid()[i][j].setX(i *width+17);
+				getTextForGrid()[i][j].setY(j*width+30);
+				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
 				switch(name){
-				case "3er Matrix":
-					cleanGrid();
+				case "3er Matrix":					
 					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
 					break;
-				case "5er Matrik":
-					cleanGrid();
+				case "5er Matrix":
 					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
 					break;
 				}
@@ -655,7 +714,7 @@ public class MyPluginCommand implements PathCommand {
 		comboBox = new ComboBox<String>();
 		radioBtn3 = new RadioButton();
 		radioBtn5 = new RadioButton();
-		vBox = new VBox(15);
+		vBoxLeftBorder = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
 		
@@ -746,22 +805,24 @@ public class MyPluginCommand implements PathCommand {
 		this.resizedARGB = resizedARGB;
 	}
 
-	
+
 
 	public VBox getvBoxRightBorder() {
 		return vBoxRightBorder;
 	}
-
-
-
-
 
 	public void setvBoxRightBorder(VBox vBoxRightBorder) {
 		this.vBoxRightBorder = vBoxRightBorder;
 	}
 
 
+	public VBox getvBoxLeftBorder() {
+		return vBoxLeftBorder;
+	}
 
+	public void setvBoxLeftBorder(VBox vBox) {
+		this.vBoxLeftBorder = vBox;
+	}
 
 
 
@@ -849,13 +910,7 @@ public class MyPluginCommand implements PathCommand {
 		this.tGroup = tGroup;
 	}
 
-	public VBox getvBox() {
-		return vBox;
-	}
-
-	public void setvBox(VBox vBox) {
-		this.vBox = vBox;
-	}
+	
 
 	public HBox gethBox() {
 		return hBox;
@@ -873,21 +928,6 @@ public class MyPluginCommand implements PathCommand {
 		this.threshold = threshold;
 	}
 	
-	public RadioButton getRadioBtn3() {
-		return radioBtn3;
-	}
-
-	public void setRadioBtn3(RadioButton radioBtn3) {
-		this.radioBtn3 = radioBtn3;
-	}
-
-	public RadioButton getRadioBtn5() {
-		return radioBtn5;
-	}
-
-	public void setRadioBtn5(RadioButton radioBtn5) {
-		this.radioBtn5 = radioBtn5;
-	}
 	
 	public static Text[][] getTextForGrid() {
 		return textForGrid;
@@ -925,6 +965,18 @@ public class MyPluginCommand implements PathCommand {
 
 	public static void setlPF3Matrix(String[][] lPF3Matrix) {
 		MyPluginCommand.lPF3Matrix = lPF3Matrix;
+	}
+	
+	private int getHalfKernelSize() {
+		return 2;
+	}
+	
+	public String getChoiceOperation() {
+		return choiceOperation;
+	}
+
+	public void setChoiceOperation(String choiceOperation) {
+		this.choiceOperation = choiceOperation;
 	}
 	
 }
