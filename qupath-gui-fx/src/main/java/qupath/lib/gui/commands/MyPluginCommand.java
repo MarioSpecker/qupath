@@ -19,6 +19,7 @@ import javax.swing.text.html.ImageView;
 
 
 
+
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -126,22 +127,20 @@ public class MyPluginCommand implements PathCommand {
 	@Override
 	public void run() {
 		initNodes();
+		setViewToDefault();
 		
 		img = qupath.getViewer().getThumbnail(); // create Image
 		argb = new int[getImg().getHeight() * getImg().getWidth()];
 		updatedArray = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
-		
+
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
-		
-		dialog = createDialog();
-		dialog.showAndWait();
 
-		
-		
-		
-		
+		dialog = createDialog();
+		getDialog().showAndWait();
+
+
 		switch(getChoiceOperation()){
 		case "BINARY":
 			toGrayScale(getImg().getHeight(), getImg().getWidth(), getArgb());
@@ -379,7 +378,6 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
-	
 	private int getPixelFromLP3(int x, int y, int width, int[] argb){
 		int pix2 = argb[(y-1)*width+x]&0xff;
 		int pix4 = argb[y*width+(x-1)]&0xff;
@@ -408,7 +406,6 @@ public class MyPluginCommand implements PathCommand {
 				- pix24 - pix31 -(2+pix32) -pix33 - pix42);
 		return pixel;
 	}
-	
 	
 	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray ){
 		int pixel;
@@ -487,12 +484,13 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createRightBorder(){
+		getComboBox().getItems().add("Grayscale");
+		getComboBox().getItems().add("Binary"); 
 		getComboBox().getItems().add("Edge"); 
 		getComboBox().getItems().add("Gauss"); 
 		getComboBox().getItems().add("Dilatation"); 
 		getComboBox().getItems().add("Erosion"); 
-		getComboBox().getItems().add("Binary"); 
-		getComboBox().getItems().add("Grayscale"); 
+		 
 		getComboBox().getSelectionModel().select(0);
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
@@ -598,11 +596,11 @@ public class MyPluginCommand implements PathCommand {
 	private void createBottom(){
 		getBtnOk().setText("OK");
 		getBtnOk().setOnAction(actionEvent -> {
-			dialog.close();
+			getDialog().close();
 		});
 		gethBox().setAlignment(Pos.CENTER);
 		gethBox().setPadding(new Insets(10,10,10,10));
-		gethBox().setHgrow(btnOk, Priority.ALWAYS);
+		gethBox().setHgrow(getBtnOk(), Priority.ALWAYS);
 		getBtnOk().setMaxWidth(Double.MAX_VALUE);
 		gethBox().getChildren().add(getBtnOk());
 		root.setBottom(gethBox());
@@ -706,6 +704,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
+	@SuppressWarnings("restriction")
 	private void cleanGrid(){
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
@@ -713,6 +712,13 @@ public class MyPluginCommand implements PathCommand {
 				getTextForGrid()[i][j].setText("");
 			}
 		}
+	}
+	
+	@SuppressWarnings("restriction")
+	private void setViewToDefault(){
+		getvBoxLeftBorder().setDisable(true);
+		getradioBtn3().setDisable(true);
+		getradioBtn5().setDisable(true);
 	}
 	
 	@SuppressWarnings("restriction")
