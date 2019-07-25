@@ -76,7 +76,10 @@ public class MyPluginCommand implements PathCommand {
 	private static Rectangle[][] rec;
 	private boolean[][] kernel;
 	private int[] resizedARGB;
-	private int[] arrayLaPlace;
+	private int[] updatedArray;
+	
+
+
 	private int[][] laPlaceFilter;
 	private VBox vBoxRightBorder;
 	private BorderPane root;
@@ -100,6 +103,7 @@ public class MyPluginCommand implements PathCommand {
 	private static String[][] gaussMatrix3x3;
 	private static String[][] gaussMatrix5x5;
 	private String choiceOperation;
+	private int sizeBorder;
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -111,12 +115,11 @@ public class MyPluginCommand implements PathCommand {
 		this.lPF3Matrix = new String[][]{{"0","0","0","0","0"},{"0","0","-1","0","0"},{"0","-1","4","-1","0"},{"0","0","-1","0","0"},{"0","0","0","0","0"}};
 		this.lPF5Matrix = new String[][]{{"0","0","-1","0","0"},{"0","-1","-2","-1","0"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
 		this.gaussMatrix3x3 = new String[][]{{"0","0","0","0","0"},{"0","1","2","1","0"},{"0","2","4","2","0"},{"0","1","2","1","0"},{"0","0","0","0","0"}};
-		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
+		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"7","26","41","26","7"},{"4","16","26","16","4"},{"1","4","7","4","1"}};
 		this.choiceOperation  = "DEFAULT";
 	}
 
 	
-
 
 
 	@SuppressWarnings("restriction")
@@ -126,10 +129,10 @@ public class MyPluginCommand implements PathCommand {
 		
 		img = qupath.getViewer().getThumbnail(); // create Image
 		argb = new int[getImg().getHeight() * getImg().getWidth()];
-		arrayLaPlace = new int[getImg().getHeight() * getImg().getWidth()];
+		updatedArray = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
 		
-		System.arraycopy(getArgb(), 0, getArrayLaPlace(), 0, getArgb().length);
+		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
 		
 		dialog = createDialog();
@@ -141,31 +144,40 @@ public class MyPluginCommand implements PathCommand {
 		
 		switch(getChoiceOperation()){
 		case "BINARY":
+			toGrayScale(getImg().getHeight(), getImg().getWidth(), getArgb());
 			setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
 			binarize(getArgb(), getImg().getHeight(), getImg().getWidth(), getThreshold());
+			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GRAYSCALE":
 			toGrayScale(getImg().getHeight(), getImg().getWidth(), getArgb());
+			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "DILATATION":
 			BufferedImage dilatationImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] dilatArray = new int[dilatationImage.getHeight() * dilatationImage.getWidth()];
 			prepareImageForDilatation(dilatationImage, dilatArray, getArgb(), getImg().getWidth(), getImg().getHeight());
 			dilatation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, getArgb(), getImg().getWidth());
+			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "EROSION":
 			BufferedImage erosionImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] erosionArray = new int[erosionImage.getHeight() * erosionImage.getWidth()];
 			prepareImageForErosion(erosionImage, erosionArray, getArgb(), getImg().getWidth(), getImg().getHeight());
 			erosion(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, getArgb(), getImg().getWidth());
+			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GAUSS":
+			gaussFilterOperation(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getGridSize(), getArgb(), getUpdatedArray());
+			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		case "EDGE":
+			edgeDetection(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getArgb(), getUpdatedArray());
+			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		}
 
-		drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
+		
 	}
 		
 		
@@ -322,7 +334,7 @@ public class MyPluginCommand implements PathCommand {
 				if (pixelCenter == 0) {
 					for (int j = -getHalfKernelSize(); j <= getHalfKernelSize(); j++) {
 						for (int i = -getHalfKernelSize(); i <= getHalfKernelSize(); i++) {
-							if (kernel[i + getHalfKernelSize()][j + getHalfKernelSize()] == true) {
+							if (getKernel()[i + getHalfKernelSize()][j + getHalfKernelSize()] == true) {
 								int pix = resizedArray[(y - j) * width+ (x - i)] & 0xff;
 								if(pix == 255){
 									int white = 0xffffff;
@@ -352,8 +364,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 
 	
-
-	private void edgeDetection(int width, int height, int sizeBorder, int[] argb, int[] arrayLP, int threshold){
+	private void edgeDetection(int width, int height, int sizeBorder, int[] argb, int[] arrayLP){
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) { 
 				int pixel;
@@ -399,7 +410,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	private void gaussFilter(int width, int height, int sizeBorder, int gridSize, int[] argb){
+	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray ){
 		int pixel;
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) {
@@ -410,7 +421,7 @@ public class MyPluginCommand implements PathCommand {
 					pixel = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb) ;
 				if(pixel<0)pixel=0;
 				else if(pixel>255)pixel=255;
-				argb[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
+				updArray[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
 			}
 		}
 	}
@@ -499,15 +510,15 @@ public class MyPluginCommand implements PathCommand {
 	                   System.out.println("Button: " + button.getText());
 	                   int sizeBorder=0;
 	                   if(button.getText().contains("3er Matrix")){
-	                	   sizeBorder=1;
+	                	   setSizeBorder(1);
 	                	   cleanGrid();
-	                	   fillGridWithText(button.getText());
-	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), sizeBorder , getArgb(), getArrayLaPlace(), getThreshold());
+	                	   fillGridWithText(button.getText(), getChoiceOperation());
+	                	   
 	                   }else{
-	                	   sizeBorder=2;
+	                	   setSizeBorder(2);
 	                	   cleanGrid();
-	                	   fillGridWithText(button.getText());
-	                	   edgeDetection(getImg().getWidth(), getImg().getHeight(), sizeBorder , getArgb(), getArrayLaPlace(), getThreshold());
+	                	   fillGridWithText(button.getText(),  getChoiceOperation());
+	
 	                   }
 	               }
 	           }
@@ -553,6 +564,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(false);
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
+		getradioBtn3().setSelected(true);
 		cleanGrid();
 	}
 	
@@ -569,6 +581,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(false);
 		getradioBtn5().setDisable(false);
+		cleanGrid();
 	}
 	
 	
@@ -673,7 +686,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	@SuppressWarnings("restriction")
-	private void fillGridWithText(String name){
+	private void fillGridWithText(String nameMatrix, String nameOperation){
 		cleanGrid();
 		double width = getWidthOfGrid() / getGridSize();
 		for (int i = 0; i < getGridSize(); i++) {
@@ -681,14 +694,14 @@ public class MyPluginCommand implements PathCommand {
 				getTextForGrid()[i][j].setX(i *width+17);
 				getTextForGrid()[i][j].setY(j*width+30);
 				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
-				switch(name){
-				case "3er Matrix":					
+				if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("EDGE"))
 					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
-					break;
-				case "5er Matrix":
+				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
 					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
-					break;
-				}
+				else if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("GAUSS"))
+					getTextForGrid()[i][j].setText(getGaussMatrix3x3()[i][j]);
+				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS"))
+					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
 			}
 		}
 	}
@@ -749,13 +762,7 @@ public class MyPluginCommand implements PathCommand {
 		this.kernel = kernel;
 	}
 
-	public int[] getArrayLaPlace() {
-		return arrayLaPlace;
-	}
-
-	public void setArrayLaPlace(int[] arrayLaPlace) {
-		this.arrayLaPlace = arrayLaPlace;
-	}
+	
 
 	public int[][] getLaPlaceFilter() {
 		return laPlaceFilter;
@@ -909,7 +916,6 @@ public class MyPluginCommand implements PathCommand {
 	public void settGroup(ToggleGroup tGroup) {
 		this.tGroup = tGroup;
 	}
-
 	
 
 	public HBox gethBox() {
@@ -947,8 +953,6 @@ public class MyPluginCommand implements PathCommand {
 	}
 
 
-
-
 	public static String[][] getlPF5Matrix() {
 		return lPF5Matrix;
 	}
@@ -977,6 +981,40 @@ public class MyPluginCommand implements PathCommand {
 
 	public void setChoiceOperation(String choiceOperation) {
 		this.choiceOperation = choiceOperation;
+	}
+	
+	public static String[][] getGaussMatrix3x3() {
+		return gaussMatrix3x3;
+	}
+
+	public static void setGaussMatrix3x3(String[][] gaussMatrix3x3) {
+		MyPluginCommand.gaussMatrix3x3 = gaussMatrix3x3;
+	}
+
+	public static String[][] getGaussMatrix5x5() {
+		return gaussMatrix5x5;
+	}
+
+
+	public static void setGaussMatrix5x5(String[][] gaussMatrix5x5) {
+		MyPluginCommand.gaussMatrix5x5 = gaussMatrix5x5;
+	}
+	
+	public int getSizeBorder() {
+		return sizeBorder;
+	}
+
+
+	public void setSizeBorder(int sizeBorder) {
+		this.sizeBorder = sizeBorder;
+	}
+	
+	public int[] getUpdatedArray() {
+		return updatedArray;
+	}
+
+	public void setUpdatedArray(int[] updatedArray) {
+		this.updatedArray = updatedArray;
 	}
 	
 }
