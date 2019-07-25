@@ -117,7 +117,8 @@ public class MyPluginCommand implements PathCommand {
 		this.lPF5Matrix = new String[][]{{"0","0","-1","0","0"},{"0","-1","-2","-1","0"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
 		this.gaussMatrix3x3 = new String[][]{{"0","0","0","0","0"},{"0","1","2","1","0"},{"0","2","4","2","0"},{"0","1","2","1","0"},{"0","0","0","0","0"}};
 		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"7","26","41","26","7"},{"4","16","26","16","4"},{"1","4","7","4","1"}};
-		this.choiceOperation  = "DEFAULT";
+		this.choiceOperation  = "GRAYSCALE";
+		this.sizeBorder = 1;
 	}
 
 	
@@ -198,7 +199,7 @@ public class MyPluginCommand implements PathCommand {
 		qupath.getViewer().repaintEntireImage();
 	}
 
-	
+	//Bild wird binarisiert
 	private void binarize(int[] rgb, int height, int width, int threshold) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
@@ -215,6 +216,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 
+	//RGB Bild wird zu Graustufenbild
 	private void toGrayScale(int height, int width, int[] rgb) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
@@ -228,6 +230,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 
+	//Schwellenwertberechnung
 	private int getIterativeThreshold(int[] argb, int width, int height) {
 		long totalSmallerThreshold = 0;
 		long totalTallerThreshold = 0;
@@ -261,7 +264,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 
 	private boolean[][] createKernel(double radius) {
-		boolean[][] k = new boolean[gridSize][gridSize];
+		boolean[][] k = new boolean[getGridSize()][getGridSize()];
 		int x = 0, y = 0;
 		for (int j = -2; j <= 2; j++) {
 			for (int i = -2; i <= 2; i++) {
@@ -280,7 +283,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-		
+	//Neues Bild mit einem Rand wird erstellt und das Aisgangsbild wird hineinkopiert	
 	private void prepareImageForDilatation(BufferedImage dilatImage, int[] dilatArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {		
 		dilatImage.createGraphics().setColor(java.awt.Color.WHITE);
 		dilatImage.createGraphics().fillRect(0, 0, dilatImage.getWidth(), dilatImage.getHeight());
@@ -288,6 +291,7 @@ public class MyPluginCommand implements PathCommand {
 		dilatImage.getRGB(0, 0, dilatImage.getWidth(), dilatImage.getHeight(), dilatArray, 0, dilatImage.getWidth());
 	}
 	
+	//Neues Bild mit einem Rand wird erstellt und das Aisgangsbild wird hineinkopiert
 	private void prepareImageForErosion(BufferedImage erosionImage, int[] erosionArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {
 		erosionImage.createGraphics().setColor(java.awt.Color.BLACK);
 		erosionImage.createGraphics().fillRect(0, 0, erosionImage.getWidth(), erosionImage.getHeight());
@@ -363,6 +367,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 
 	
+	//LaPlace Kantendetektion
 	private void edgeDetection(int width, int height, int sizeBorder, int[] argb, int[] arrayLP){
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) { 
@@ -378,6 +383,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
+	//LaPlace Kantendetektion -> 3X3 Matrix
 	private int getPixelFromLP3(int x, int y, int width, int[] argb){
 		int pix2 = argb[(y-1)*width+x]&0xff;
 		int pix4 = argb[y*width+(x-1)]&0xff;
@@ -388,6 +394,7 @@ public class MyPluginCommand implements PathCommand {
 		return pixel;
 	}
 	
+	//LaPlace Kantendetektion -> 5X5 Matrix
 	private int getPixelFromLP5(int x, int y, int width, int[] argb){
 		int pix02 = argb[(y-2)*width+x]&0xff;
 		int pix11 = argb[(y-1)*width+(x-1)]&0xff;
@@ -407,6 +414,7 @@ public class MyPluginCommand implements PathCommand {
 		return pixel;
 	}
 	
+	//Gauss Filter um das Bild zu glätten
 	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray ){
 		int pixel;
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
@@ -423,6 +431,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
+	//3x3 Matrix für den Gauss Filter
 	private int getPixelFromGauss3Matrix(int x, int y, int width, int[] argb){
 		int pix00 = argb[(y-1)*width+(x-1)]&0xff;
 		int pix01 = argb[(y-1)*width+(x)]&0xff;
@@ -437,6 +446,8 @@ public class MyPluginCommand implements PathCommand {
 		return pixel;
 	}
 	
+	
+	//5x5 Matrix für den Gauss Filter
 	private int getPixelFromGauss5Matrix(int x, int y, int width, int gridSize, int sizeBorder, int[] argb){
 		int [][] a= new int[gridSize][gridSize];
 		for (int j = -sizeBorder; j < sizeBorder; j++) {
@@ -506,7 +517,6 @@ public class MyPluginCommand implements PathCommand {
 	               if (tGroup.getSelectedToggle() != null) {
 	                   RadioButton button = (RadioButton) tGroup.getSelectedToggle();
 	                   System.out.println("Button: " + button.getText());
-	                   int sizeBorder=0;
 	                   if(button.getText().contains("3er Matrix")){
 	                	   setSizeBorder(1);
 	                	   cleanGrid();
@@ -586,9 +596,9 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void createCenter(){
 		Pane b = makeGrid(getGridSize());
-		root.setAlignment(b, Pos.CENTER);
-		root.setMargin(b, new Insets(20, 20, 20, 20));
-		root.setCenter(b);
+		getRoot().setAlignment(b, Pos.CENTER);
+		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
+		getRoot().setCenter(b);
 	}
 	
 	
@@ -603,7 +613,7 @@ public class MyPluginCommand implements PathCommand {
 		gethBox().setHgrow(getBtnOk(), Priority.ALWAYS);
 		getBtnOk().setMaxWidth(Double.MAX_VALUE);
 		gethBox().getChildren().add(getBtnOk());
-		root.setBottom(gethBox());
+		getRoot().setBottom(gethBox());
 	}
 	
 	
@@ -643,7 +653,7 @@ public class MyPluginCommand implements PathCommand {
 		getBtn4().setMaxHeight(Double.MAX_VALUE);
 		getvBoxLeftBorder().getChildren().addAll(getBtn1(), getBtn2(),getBtn3(), getBtn4());
 		getvBoxLeftBorder().setPadding(new Insets(10,10,10,10));
-		root.setLeft(getvBoxLeftBorder());
+		getRoot().setLeft(getvBoxLeftBorder());
 	}
 	
 	
@@ -736,6 +746,7 @@ public class MyPluginCommand implements PathCommand {
 		vBoxLeftBorder = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
+		
 		
 	}
 
