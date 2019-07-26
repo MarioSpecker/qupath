@@ -168,7 +168,7 @@ public class MyPluginCommand implements PathCommand {
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GAUSS":
-			gaussFilterOperation(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getGridSize(), getArgb(), getUpdatedArray());
+			gaussFilterOperation(getImg().getWidth(), getImg().getHeight(), getHalfKernelSize(), getGridSize(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		case "EDGE":
@@ -394,42 +394,45 @@ public class MyPluginCommand implements PathCommand {
 		return pixel;
 	}
 	
-	
-	
-	//Gauss Filter um das Bild zu glätten
-	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray){
-		int choiceColor;
-		int pixel;
-		for (int y = sizeBorder; y < height-sizeBorder; y++) {
-			for (int x = sizeBorder; x<width -sizeBorder; x++) {
-				choiceColor = 0;
-				int pixelR = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb, choiceColor);
-				choiceColor=1;
-				int pixelG = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb, choiceColor) ;
-				choiceColor = 2;
-				int pixelB = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb, choiceColor) ;
-				updArray[y*width+x] = ((0xFF << 24) | (pixelR << 16) | (pixelG << 8) | pixelB);
-			}
-		}
+	//LaPlace Kantendetektion -> 5X5 Matrix
+	private int getPixelFromLP5(int x, int y, int width, int[] argb){
+		int pix02 = argb[(y-2)*width+x]&0xff;
+		int pix11 = argb[(y-1)*width+(x-1)]&0xff;
+		int pix12 = argb[(y-1)*width+x]&0xff;
+		int pix13 = argb[(y-1)*width+(x+1)]&0xff;
+		int pix20 = argb[y*width+(x-2)]&0xff;
+		int pix21 = argb[y*width+(x-1)]&0xff;
+		int pix22 = argb[y*width+x]&0xff;
+		int pix23 = argb[y*width+(x+1)]&0xff;
+		int pix24 = argb[y*width+(x+2)]&0xff;
+		int pix31 = argb[(y+1)*width+(x-1)]&0xff;
+		int pix32 = argb[(y+1)*width+x]&0xff;
+		int pix33 = argb[(y+1)*width+(x+1)]&0xff;
+		int pix42 = argb[(y+2)*width+x]&0xff;
+		int pixel = (-pix02 - pix11 -(2*pix12)- pix13 -pix20 - (2*pix21) +(16*pix22) -(2*pix23)
+				- pix24 - pix31 -(2+pix32) -pix33 - pix42);
+		return pixel;
 	}
 	
 	
 	
-	
+	//Gauss Filter um das Bild zu glätten
+	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray ){
+		int pixel;
+		for (int y = sizeBorder; y < height-sizeBorder; y++) {
+			for (int x = sizeBorder; x<width -sizeBorder; x++) {
+				pixel = getPixelFromGauss5x5Matrix(x, y, width, gridSize, sizeBorder,  argb) ;
+				updArray[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
+			}
+		}
+	}
+		
 	//5x5 Matrix für den Gauss Filter
-	private int getPixelFromGauss5Matrix(int x, int y, int width, int gridSize, int sizeBorder, int[] argb, int choiceColor){
+	private int getPixelFromGauss5x5Matrix(int x, int y, int width, int gridSize, int sizeBorder, int[] argb){
 		int [][] a= new int[gridSize][gridSize];
 		for (int j = -sizeBorder; j < sizeBorder; j++) {
 			for (int i = -sizeBorder; i<sizeBorder; i++) {
-				if(choiceColor==0)
-				a[i+2][j+2] = argb[(y-j)*width+(x-i)>> 16]&0x000000FF;	
-				else if(choiceColor==1)
-				a[i+2][j+2] = argb[(y-j)*width+(x-i)>> 8]&0x000000FF;
-				else if(choiceColor==2)
 				a[i+2][j+2] = argb[(y-j)*width+(x-i)]&0x000000FF;	
-				else{
-					System.out.println("Fehler");
-				}
 			}
 		}
 		double pixel = (1d/273*a[0][0])+(4d/273*a[0][1])+(7d/273*a[0][2])+(4d/273*a[0][3])+(1d/273*a[0][4])
@@ -523,11 +526,11 @@ public class MyPluginCommand implements PathCommand {
 	
 	private void selectOperation(String selected){
 		if(selected.contains("Edge")){
-			updateViewFilter();
+			updateViewEdge();
 			setChoiceOperation("EDGE");
 		}
 		else if(selected.contains("Gauss")){
-			updateViewFilter();
+			updateViewForNonSelectableOperations();
 			setChoiceOperation("GAUSS");
 		}
 		else if(selected.contains("Dilatation")){
@@ -538,39 +541,47 @@ public class MyPluginCommand implements PathCommand {
 			setChoiceOperation("EROSION");
 		}
 		else if(selected.contains("Binary")){
-			updateViewImgTyp();
+			updateViewForNonSelectableOperations();
 			setChoiceOperation("BINARY");
 		}
 		else if(selected.contains("Grayscale")){
-			updateViewImgTyp();
+			updateViewForNonSelectableOperations();
 			setChoiceOperation("GRAYSCALE");
 		}
 	}
 	
+	//GUI update wenn 
 	@SuppressWarnings("restriction")
 	private void updateViewMorph(){
 		getvBoxLeftBorder().setDisable(false);
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
 		getradioBtn3().setSelected(true);
+		setSizeBorder(1);
 		cleanGrid();
 	}
 	
+	//GUI update wenn Graustufenbild, Binärbild oder GaussFilter angewendet wird
 	@SuppressWarnings("restriction")
-	private void updateViewImgTyp(){
+	private void updateViewForNonSelectableOperations(){
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
 		getvBoxLeftBorder().setDisable(true);
+		getradioBtn3().setSelected(true);
+		setSizeBorder(1);
+		
 		cleanGrid();
 	}
 	
 	@SuppressWarnings("restriction")
-	private void updateViewFilter(){
+	private void updateViewEdge(){
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(false);
 		getradioBtn5().setDisable(false);
 		cleanGrid();
 	}
+	
+	
 	
 	
 	@SuppressWarnings("restriction")
@@ -686,8 +697,6 @@ public class MyPluginCommand implements PathCommand {
 					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
 				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
 					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
-				else if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("GAUSS"))
-					getTextForGrid()[i][j].setText(getGaussMatrix3x3()[i][j]);
 				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS"))
 					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
 			}
