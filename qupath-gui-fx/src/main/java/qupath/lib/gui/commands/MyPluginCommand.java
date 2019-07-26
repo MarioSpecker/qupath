@@ -486,7 +486,6 @@ public class MyPluginCommand implements PathCommand {
 		getComboBox().getItems().add("Gauss"); 
 		getComboBox().getItems().add("Dilatation"); 
 		getComboBox().getItems().add("Erosion"); 
-		 
 		getComboBox().getSelectionModel().select(0);
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
@@ -526,6 +525,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
+	//Auswahl aller Operationen
 	private void selectOperation(String selected){
 		if(selected.contains("Edge")){
 			updateViewEdge();
@@ -552,7 +552,7 @@ public class MyPluginCommand implements PathCommand {
 			updateViewForNonSelectableOperations();
 			setChoiceOperation("GRAYSCALE");
 		}
-		if(selected.contains("Select")){
+		else if(selected.contains("Select")){
 			updateViewEdge();
 			setChoiceOperation("NOOPERATION");
 		}
@@ -597,7 +597,6 @@ public class MyPluginCommand implements PathCommand {
 		getRoot().setAlignment(b, Pos.CENTER);
 		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
 		getRoot().setCenter(b);
-		
 	}
 	
 	
@@ -616,6 +615,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
+	//
 	@SuppressWarnings("restriction")
 	private void createLeftBorder(){
 		getBtn1().setText("Button 1");
@@ -658,11 +658,11 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 	
-
+	//Hier wird das Grid erstellt
 	@SuppressWarnings("restriction")
 	public static Pane makeGrid(int size) {
 		double width = getWidthOfGrid() / size;
-		Pane p = new Pane();
+		Pane pane = new Pane();
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
 				getTextForGrid()[i][j] = new Text();
@@ -673,13 +673,13 @@ public class MyPluginCommand implements PathCommand {
 				getRec()[i][j].setHeight(width);
 				getRec()[i][j].setFill(null);
 				getRec()[i][j].setStroke(Color.BLACK);
-				p.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);
+				pane.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);
 			}
 		}
-		return p;
+		return pane;
 	}
 	
-	
+	//Bei Dilatation und Erosion wird der Kernel auf das Grid gezeichnet 
 	private void fillGridKernel(boolean[][] kernel) {
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
@@ -692,6 +692,8 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
+	
+	//Alle Operationen die Grid in der Gui mit Zahlen befüllen
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String nameMatrix, String nameOperation){
 		cleanGrid();
@@ -713,6 +715,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
+	//Das Grid in der GUI wird gelöscht bzw alle Zahlen und Farben gelöscht
 	@SuppressWarnings("restriction")
 	private void cleanGrid(){
 		for (int i = 0; i < getGridSize(); i++) {
@@ -723,14 +726,15 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
+	//Wird beim Start des Plugins aufgerufen. Die Gui wird auf default gestellt
 	@SuppressWarnings("restriction")
 	private void setViewToDefault(){
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
-		System.out.println(getChoiceOperation());
 	}
 	
+	//Alle Nodes des Plugins werden hier initialisiert
 	@SuppressWarnings("restriction")
 	private void initNodes(){
 		vBoxRightBorder = new VBox();
