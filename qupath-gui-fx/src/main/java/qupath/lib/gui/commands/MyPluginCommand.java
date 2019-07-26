@@ -534,6 +534,8 @@ public class MyPluginCommand implements PathCommand {
 		else if(selected.contains("Gauss")){
 			updateViewForNonSelectableOperations();
 			setChoiceOperation("GAUSS");
+			fillGridWithText("5er Matrix", getChoiceOperation());
+			
 		}
 		else if(selected.contains("Dilatation")){
 			updateViewMorph();
@@ -564,6 +566,7 @@ public class MyPluginCommand implements PathCommand {
 		getradioBtn5().setDisable(true);
 		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
+		cleanGrid();
 	}
 	
 	//GUI update wenn Graustufenbild, Binärbild oder GaussFilter angewendet wird
@@ -574,6 +577,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
+		cleanGrid();
 	}
 	
 	@SuppressWarnings("restriction")
@@ -581,6 +585,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(false);
 		getradioBtn5().setDisable(false);
+		cleanGrid();
 	}
 	
 	
@@ -589,7 +594,6 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void createCenter(){
 		Pane b = makeGrid(getGridSize());
-		
 		getRoot().setAlignment(b, Pos.CENTER);
 		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
 		getRoot().setCenter(b);
@@ -701,8 +705,10 @@ public class MyPluginCommand implements PathCommand {
 					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
 				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
 					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
-				else if (nameOperation.contains("GAUSS"))
+				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS")){
 					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
+				}
+					
 			}
 		}
 	}
