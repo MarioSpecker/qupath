@@ -394,73 +394,53 @@ public class MyPluginCommand implements PathCommand {
 		return pixel;
 	}
 	
-	//LaPlace Kantendetektion -> 5X5 Matrix
-	private int getPixelFromLP5(int x, int y, int width, int[] argb){
-		int pix02 = argb[(y-2)*width+x]&0xff;
-		int pix11 = argb[(y-1)*width+(x-1)]&0xff;
-		int pix12 = argb[(y-1)*width+x]&0xff;
-		int pix13 = argb[(y-1)*width+(x+1)]&0xff;
-		int pix20 = argb[y*width+(x-2)]&0xff;
-		int pix21 = argb[y*width+(x-1)]&0xff;
-		int pix22 = argb[y*width+x]&0xff;
-		int pix23 = argb[y*width+(x+1)]&0xff;
-		int pix24 = argb[y*width+(x+2)]&0xff;
-		int pix31 = argb[(y+1)*width+(x-1)]&0xff;
-		int pix32 = argb[(y+1)*width+x]&0xff;
-		int pix33 = argb[(y+1)*width+(x+1)]&0xff;
-		int pix42 = argb[(y+2)*width+x]&0xff;
-		int pixel = (-pix02 - pix11 -(2*pix12)- pix13 -pix20 - (2*pix21) +(16*pix22) -(2*pix23)
-				- pix24 - pix31 -(2+pix32) -pix33 - pix42);
-		return pixel;
-	}
+	
 	
 	//Gauss Filter um das Bild zu glätten
-	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray ){
+	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray){
+		int choiceColor;
 		int pixel;
 		for (int y = sizeBorder; y < height-sizeBorder; y++) {
 			for (int x = sizeBorder; x<width -sizeBorder; x++) {
-				argb[y] =1;
-				if(sizeBorder==1)
-					pixel = getPixelFromGauss3Matrix(x, y, sizeBorder, argb);
-				else
-					pixel = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb) ;
-				if(pixel<0)pixel=0;
-				else if(pixel>255)pixel=255;
-				updArray[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
+				choiceColor = 0;
+				int pixelR = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb, choiceColor);
+				choiceColor=1;
+				int pixelG = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb, choiceColor) ;
+				choiceColor = 2;
+				int pixelB = getPixelFromGauss5Matrix(x, y, width, gridSize, sizeBorder,  argb, choiceColor) ;
+				updArray[y*width+x] = ((0xFF << 24) | (pixelR << 16) | (pixelG << 8) | pixelB);
 			}
 		}
 	}
 	
-	//3x3 Matrix für den Gauss Filter
-	private int getPixelFromGauss3Matrix(int x, int y, int width, int[] argb){
-		int pix00 = argb[(y-1)*width+(x-1)]&0xff;
-		int pix01 = argb[(y-1)*width+(x)]&0xff;
-		int pix02 = argb[(y-1)*width+(x+1)]&0xff;
-		int pix10 = argb[(y)*width+(x-1)]&0xff;
-		int pix11 = argb[(y)*width+(x)]&0xff;
-		int pix12 = argb[(y)*width+(x+1)]&0xff;
-		int pix20 = argb[(y+1)*width+(x-1)]&0xff;
-		int pix21 = argb[(y+1)*width+(x)]&0xff;
-		int pix22 = argb[(y+1)*width+(x+1)]&0xff;
-		int pixel = (1/16*pix00)+(2/16*pix01)+(1/16*pix02)+(2/16*pix10)+(4/16*pix11)+(2/16*pix12)+(1/16*pix20)+(2/16*pix21)+(1/16*pix22);
-		return pixel;
-	}
+	
 	
 	
 	//5x5 Matrix für den Gauss Filter
-	private int getPixelFromGauss5Matrix(int x, int y, int width, int gridSize, int sizeBorder, int[] argb){
+	private int getPixelFromGauss5Matrix(int x, int y, int width, int gridSize, int sizeBorder, int[] argb, int choiceColor){
 		int [][] a= new int[gridSize][gridSize];
 		for (int j = -sizeBorder; j < sizeBorder; j++) {
 			for (int i = -sizeBorder; i<sizeBorder; i++) {
-				a[i+2][j+2] = argb[(y-j)*width+(x-i)]&0xff;	
+				if(choiceColor==0)
+				a[i+2][j+2] = argb[(y-j)*width+(x-i)>> 16]&0x000000FF;	
+				else if(choiceColor==1)
+				a[i+2][j+2] = argb[(y-j)*width+(x-i)>> 8]&0x000000FF;
+				else if(choiceColor==2)
+				a[i+2][j+2] = argb[(y-j)*width+(x-i)]&0x000000FF;	
+				else{
+					System.out.println("Fehler");
+				}
 			}
 		}
-		int pixel = (1/273*a[0][0])+(4/273*a[0][1])+(7/273*a[0][2])+(4/273*a[0][3])+(1/273*a[0][4])
-				+(4/273*a[1][0])+(16/273*a[1][1])+(26/273*a[1][2])+(16/273*a[1][3])+(4/273*a[1][4])
-				+(7/273*a[2][0])+(26/273*a[2][1])+(41/273*a[2][2])+(26/273*a[2][3])+(7/273*a[2][4])
-				+(4/273*a[3][0])+(16/273*a[3][1])+(26/273*a[3][2])+(16/273*a[3][3])+(4/273*a[3][4])
-				+(1/273*a[4][0])+(4/273*a[4][1])+(7/273*a[4][2])+(4/273*a[4][3])+(1/273*a[4][4]);
-		return pixel;
+		double pixel = (1d/273*a[0][0])+(4d/273*a[0][1])+(7d/273*a[0][2])+(4d/273*a[0][3])+(1d/273*a[0][4])
+				+(4d/273*a[1][0])+(16d/273*a[1][1])+(26d/273*a[1][2])+(16d/273*a[1][3])+(4d/273*a[1][4])
+				+(7d/273*a[2][0])+(26d/273*a[2][1])+(41d/273*a[2][2])+(26d/273*a[2][3])+(7d/273*a[2][4])
+				+(4d/273*a[3][0])+(16d/273*a[3][1])+(26d/273*a[3][2])+(16d/273*a[3][3])+(4d/273*a[3][4])
+				+(1d/273*a[4][0])+(4d/273*a[4][1])+(7d/273*a[4][2])+(4d/273*a[4][3])+(1d/273*a[4][4]);
+		int pix = (int)pixel;
+		if(pix<0)pix=0;
+		else if(pix>255)pix=255;
+		return pix;
 	}
 	
 	
