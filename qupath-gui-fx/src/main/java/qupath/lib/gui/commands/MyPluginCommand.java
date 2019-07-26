@@ -89,6 +89,9 @@ public class MyPluginCommand implements PathCommand {
 	private Button btn3;
 	private Button btn4;
 	private Button btnOk;
+	private Button btnCancel;
+	
+
 	private ComboBox<String> comboBox;
 	private RadioButton radioBtn3; 
 	private RadioButton radioBtn5;
@@ -117,8 +120,9 @@ public class MyPluginCommand implements PathCommand {
 		this.lPF5Matrix = new String[][]{{"0","0","-1","0","0"},{"0","-1","-2","-1","0"},{"-1","-2","16","-2","-1"},{"0","-1","-2","-1","0"},{"0","0","-1","0","0"}};
 		this.gaussMatrix3x3 = new String[][]{{"0","0","0","0","0"},{"0","1","2","1","0"},{"0","2","4","2","0"},{"0","1","2","1","0"},{"0","0","0","0","0"}};
 		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"7","26","41","26","7"},{"4","16","26","16","4"},{"1","4","7","4","1"}};
-		this.choiceOperation  = "GRAYSCALE";
+		this.choiceOperation  = "NOOPERATION";
 		this.sizeBorder = 1;
+		
 	}
 
 	
@@ -137,9 +141,15 @@ public class MyPluginCommand implements PathCommand {
 
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
-
+		
 		dialog = createDialog();
+		getDialog().setOnCloseRequest(event ->
+	    {
+	        this.setChoiceOperation("NOOPERATION");
+	        getDialog().close();
+	    });
 		getDialog().showAndWait();
+		
 
 
 		switch(getChoiceOperation()){
@@ -175,23 +185,15 @@ public class MyPluginCommand implements PathCommand {
 			edgeDetection(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
+		
+		case "NOOPERATION":
+			break;
 		}
-
 		
 	}
 		
 		
 	
-		
-		
-		
-		
-	
-
-	
-
-
-
 
 
 	private void drawImage(int height, int width, int[] rgb) {
@@ -460,7 +462,6 @@ public class MyPluginCommand implements PathCommand {
 		Stage dialog = new Stage();
 		dialog.initOwner(qupath.getStage());
 		dialog.setTitle("My Plugin Dialog");
-
 		dialog.setScene(new Scene(addBorderPane(), 500, 350));
 		return dialog;
 	}
@@ -468,16 +469,17 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private BorderPane addBorderPane() {
 		createCenter();
+		createCenter();
 		createLeftBorder();
 		createRightBorder();
 		createBottom();
 		return root;
-
 	}
 	
 	
 	@SuppressWarnings("restriction")
 	private void createRightBorder(){
+		getComboBox().getItems().add("Select");
 		getComboBox().getItems().add("Grayscale");
 		getComboBox().getItems().add("Binary"); 
 		getComboBox().getItems().add("Edge"); 
@@ -548,9 +550,13 @@ public class MyPluginCommand implements PathCommand {
 			updateViewForNonSelectableOperations();
 			setChoiceOperation("GRAYSCALE");
 		}
+		if(selected.contains("Select")){
+			updateViewEdge();
+			setChoiceOperation("NOOPERATION");
+		}
 	}
 	
-	//GUI update wenn 
+	//GUI update wenn Dilatation bzw Erosion ausgewaehlt wird
 	@SuppressWarnings("restriction")
 	private void updateViewMorph(){
 		getvBoxLeftBorder().setDisable(false);
@@ -558,7 +564,6 @@ public class MyPluginCommand implements PathCommand {
 		getradioBtn5().setDisable(true);
 		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
-		cleanGrid();
 	}
 	
 	//GUI update wenn Graustufenbild, Binärbild oder GaussFilter angewendet wird
@@ -569,8 +574,6 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
-		
-		cleanGrid();
 	}
 	
 	@SuppressWarnings("restriction")
@@ -578,7 +581,6 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(false);
 		getradioBtn5().setDisable(false);
-		cleanGrid();
 	}
 	
 	
@@ -587,9 +589,11 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void createCenter(){
 		Pane b = makeGrid(getGridSize());
+		
 		getRoot().setAlignment(b, Pos.CENTER);
 		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
 		getRoot().setCenter(b);
+		
 	}
 	
 	
@@ -697,7 +701,7 @@ public class MyPluginCommand implements PathCommand {
 					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
 				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
 					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
-				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS"))
+				else if (nameOperation.contains("GAUSS"))
 					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
 			}
 		}
@@ -718,6 +722,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
+		System.out.println(getChoiceOperation());
 	}
 	
 	@SuppressWarnings("restriction")
@@ -735,6 +740,7 @@ public class MyPluginCommand implements PathCommand {
 		vBoxLeftBorder = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
+		
 		
 		
 	}
@@ -1021,6 +1027,14 @@ public class MyPluginCommand implements PathCommand {
 
 	public void setUpdatedArray(int[] updatedArray) {
 		this.updatedArray = updatedArray;
+	}
+	
+	public Button getBtnCancel() {
+		return btnCancel;
+	}
+
+	public void setBtnCancel(Button btnCancel) {
+		this.btnCancel = btnCancel;
 	}
 	
 }
