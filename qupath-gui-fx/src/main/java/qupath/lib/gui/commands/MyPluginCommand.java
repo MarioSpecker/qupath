@@ -1,8 +1,11 @@
 package qupath.lib.gui.commands;
 
 import qupath.lib.gui.QuPathGUI;
+import qupath.lib.gui.commands.Mario.BinaryImage;
 import qupath.lib.gui.commands.Mario.Dilatation;
 import qupath.lib.gui.commands.Mario.Erosion;
+import qupath.lib.gui.commands.Mario.GreyscaleImage;
+import qupath.lib.gui.commands.Mario.Image;
 import qupath.lib.gui.commands.Mario.MorphOperations;
 import qupath.lib.gui.commands.interfaces.PathCommand;
 import qupath.lib.gui.helpers.DisplayHelpers;
@@ -14,6 +17,9 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
+
+
+
 
 
 
@@ -160,13 +166,16 @@ public class MyPluginCommand implements PathCommand {
 
 		switch(getChoiceOperation()){
 		case "BINARY":
-			toGrayScale(getImg().getHeight(), getImg().getWidth(), getArgb());
+			Image grey = new GreyscaleImage();
+			grey.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), 0);
 			setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
-			binarize(getArgb(), getImg().getHeight(), getImg().getWidth(), getThreshold());
+			Image binary = new BinaryImage();
+			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GRAYSCALE":
-			toGrayScale(getImg().getHeight(), getImg().getWidth(), getArgb());
+			Image greyscale = new GreyscaleImage();
+			greyscale.convertImage(getImg().getWidth(), getImg().getHeight(), getArgb(), 0);
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "DILATATION":
@@ -209,36 +218,6 @@ public class MyPluginCommand implements PathCommand {
 		qupath.getViewer().repaintEntireImage();
 	}
 
-	//Bild wird binarisiert
-	private void binarize(int[] rgb, int height, int width, int threshold) {
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				int pos = y * width + x;
-				int pix = rgb[pos] & 0xff;
-
-				if (pix < threshold) {
-					pix = 0x00000000;
-				} else {
-					pix = 0xffffffff;
-				}
-				rgb[pos] = (0xFF << 24) | (pix << 16) | (pix << 8) | pix;
-			}
-		}
-	}
-
-	//RGB Bild wird zu Graustufenbild
-	private void toGrayScale(int height, int width, int[] rgb) {
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				int pos = y * width + x;
-				int r = (rgb[pos] >> 16) & 0xff;
-				int g = (rgb[pos] >> 8) & 0xff;
-				int b = rgb[pos] & 0xff;
-				int avg = (r + g + b) / 3;
-				rgb[pos] = ((0xFF << 24) | (avg << 16) | (avg << 8) | avg);
-			}
-		}
-	}
 
 	//Schwellenwertberechnung
 	private int getIterativeThreshold(int[] argb, int width, int height) {
@@ -436,8 +415,7 @@ public class MyPluginCommand implements PathCommand {
 	           @Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
 	               if (tGroup.getSelectedToggle() != null) {
-	                   RadioButton button = (RadioButton) tGroup.getSelectedToggle();
-	                   System.out.println("Button: " + button.getText());
+	                   RadioButton button = (RadioButton) gettGroup().getSelectedToggle();
 	                   if(button.getText().contains("3er Matrix")){
 	                	   setSizeBorder(1);
 	                	   cleanGrid();
