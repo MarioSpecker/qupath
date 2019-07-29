@@ -1,6 +1,9 @@
 package qupath.lib.gui.commands;
 
 import qupath.lib.gui.QuPathGUI;
+import qupath.lib.gui.commands.Mario.Dilatation;
+import qupath.lib.gui.commands.Mario.Erosion;
+import qupath.lib.gui.commands.Mario.MorphOperations;
 import qupath.lib.gui.commands.interfaces.PathCommand;
 import qupath.lib.gui.helpers.DisplayHelpers;
 
@@ -11,6 +14,9 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
+
+
+
 
 
 
@@ -166,15 +172,17 @@ public class MyPluginCommand implements PathCommand {
 		case "DILATATION":
 			BufferedImage dilatationImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] dilatArray = new int[dilatationImage.getHeight() * dilatationImage.getWidth()];
-			prepareImageForDilatation(dilatationImage, dilatArray, getArgb(), getImg().getWidth(), getImg().getHeight());
-			dilatation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, getArgb(), getImg().getWidth());
+			MorphOperations dilatation = new Dilatation();
+			dilatation.prepareMorphOperation(dilatationImage, dilatArray, getArgb(), getImg().getWidth(), getImg().getHeight());
+			dilatation.executeMorpOperation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, getArgb(), getImg().getWidth(), getHalfKernelSize(), getKernel());			
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "EROSION":
 			BufferedImage erosionImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] erosionArray = new int[erosionImage.getHeight() * erosionImage.getWidth()];
-			prepareImageForErosion(erosionImage, erosionArray, getArgb(), getImg().getWidth(), getImg().getHeight());
-			erosion(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, getArgb(), getImg().getWidth());
+			MorphOperations erosion = new Erosion();
+			erosion.prepareMorphOperation(erosionImage, erosionArray ,getArgb(), getImg().getWidth(), getImg().getHeight());
+			erosion.executeMorpOperation(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, getArgb(), getImg().getWidth(), getHalfKernelSize(), getKernel());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GAUSS":
@@ -285,77 +293,6 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	//Neues Bild mit einem Rand wird erstellt und das Aisgangsbild wird hineinkopiert	
-	private void prepareImageForDilatation(BufferedImage dilatImage, int[] dilatArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {		
-		dilatImage.createGraphics().setColor(java.awt.Color.WHITE);
-		dilatImage.createGraphics().fillRect(0, 0, dilatImage.getWidth(), dilatImage.getHeight());
-		dilatImage.setRGB(2, 2, widthDefaultImage, heightDefaultImage, argbArray, 0, widthDefaultImage);
-		dilatImage.getRGB(0, 0, dilatImage.getWidth(), dilatImage.getHeight(), dilatArray, 0, dilatImage.getWidth());
-	}
-	
-	//Neues Bild mit einem Rand wird erstellt und das Aisgangsbild wird hineinkopiert
-	private void prepareImageForErosion(BufferedImage erosionImage, int[] erosionArray, int[] argbArray, int widthDefaultImage, int heightDefaultImage) {
-		erosionImage.createGraphics().setColor(java.awt.Color.BLACK);
-		erosionImage.createGraphics().fillRect(0, 0, erosionImage.getWidth(), erosionImage.getHeight());
-		erosionImage.setRGB(2, 2, widthDefaultImage, heightDefaultImage, argbArray, 0, widthDefaultImage);
-		erosionImage.getRGB(0, 0, erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, 0, erosionImage.getWidth());
-		
-	}
-
-	private void dilatation(int width, int height, int[] resizedArray, int[] rgb, int defaultImageWidth) {
-		for (int y = 2; y < height - 2; y++) {
-			for (int x = 2; x < width - 2; x++) {
-				int pos = y * width + x;
-				int pixelCenter = resizedArray[pos] & 0xff;
-				if (pixelCenter == 255) {
-					for (int j = -getHalfKernelSize(); j <= getHalfKernelSize(); j++) {
-						for (int i = -getHalfKernelSize(); i <= getHalfKernelSize(); i++) {
-							if (getKernel()[i + getHalfKernelSize()][j + getHalfKernelSize()] == true) {
-								int pix = resizedArray[(y - j) * width+ (x - i)] & 0xff;
-								if (pix == 0) {
-									int black = 0x000000;
-									int position = (y - getHalfKernelSize()) * (defaultImageWidth) + (x - getHalfKernelSize());
-									rgb[position] = (0xFF << 24)
-											| (black << 16)
-											| (black << 8)
-											| black;
-									break;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	
-
-	private void erosion(int width, int height, int[] resizedArray, int[] rgb, int defaultImageWidth) {
-		for (int y = 2; y < height - 2; y++) {
-			for (int x = 2; x < width - 2; x++) {
-				int pos = y * width + x;
-				int pixelCenter = resizedArray[pos] & 0xff;
-				if (pixelCenter == 0) {
-					for (int j = -getHalfKernelSize(); j <= getHalfKernelSize(); j++) {
-						for (int i = -getHalfKernelSize(); i <= getHalfKernelSize(); i++) {
-							if (getKernel()[i + getHalfKernelSize()][j + getHalfKernelSize()] == true) {
-								int pix = resizedArray[(y - j) * width+ (x - i)] & 0xff;
-								if(pix == 255){
-									int white = 0xffffff;
-									rgb[(y - getHalfKernelSize()) * (defaultImageWidth) + (x - getHalfKernelSize())] = (0xFF << 24)
-											| (white << 16)
-											| (white << 8)
-											| white;
-									break;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
 
 	public void printKernel(boolean[][] kernel) {
 		for (boolean[] xS : kernel) {
