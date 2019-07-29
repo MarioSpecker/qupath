@@ -4,9 +4,12 @@ import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.Mario.BinaryImage;
 import qupath.lib.gui.commands.Mario.Dilatation;
 import qupath.lib.gui.commands.Mario.Erosion;
+import qupath.lib.gui.commands.Mario.interfa.Filter;
+import qupath.lib.gui.commands.Mario.GaussFilter;
 import qupath.lib.gui.commands.Mario.GreyscaleImage;
-import qupath.lib.gui.commands.Mario.Image;
-import qupath.lib.gui.commands.Mario.MorphOperations;
+import qupath.lib.gui.commands.Mario.interfa.Image;
+import qupath.lib.gui.commands.Mario.LaPlaceFilter;
+import qupath.lib.gui.commands.Mario.interfa.MorphOperations;
 import qupath.lib.gui.commands.interfaces.PathCommand;
 import qupath.lib.gui.helpers.DisplayHelpers;
 
@@ -17,6 +20,9 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
+
+
+
 
 
 
@@ -163,7 +169,7 @@ public class MyPluginCommand implements PathCommand {
 		getDialog().showAndWait();
 		
 
-
+		//Nach Bestätigung des Ok Knopfes bzw nach schliessen des Fensters wird die Ausgewaehlte Operation durchgeführt 
 		switch(getChoiceOperation()){
 		case "BINARY":
 			Image grey = new GreyscaleImage();
@@ -195,11 +201,13 @@ public class MyPluginCommand implements PathCommand {
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GAUSS":
-			gaussFilterOperation(getImg().getWidth(), getImg().getHeight(), getHalfKernelSize(), getGridSize(), getArgb(), getUpdatedArray());
+			Filter gauss = new GaussFilter();
+			gauss.filterOperation(getImg().getWidth(), getImg().getHeight(), getHalfKernelSize(), getGridSize(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		case "EDGE":
-			edgeDetection(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getArgb(), getUpdatedArray());
+			Filter laPlace = new LaPlaceFilter();
+			laPlace.filterOperation(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getGridSize(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		
@@ -210,10 +218,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 		
 		
-	
-
-
-	private void drawImage(int height, int width, int[] rgb) {
+		private void drawImage(int height, int width, int[] rgb) {
 		qupath.getViewer().getThumbnail().setRGB(0, 0, width, height, rgb, 0, width);
 		qupath.getViewer().repaintEntireImage();
 	}
@@ -285,90 +290,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 
 	
-	//LaPlace Kantendetektion
-	private void edgeDetection(int width, int height, int sizeBorder, int[] argb, int[] arrayLP){
-		for (int y = sizeBorder; y < height-sizeBorder; y++) {
-			for (int x = sizeBorder; x<width -sizeBorder; x++) { 
-				int pixel;
-				if(sizeBorder==1)
-					pixel = getPixelFromLP3(x, y, width, argb);
-				else
-					pixel = getPixelFromLP5(x, y, width, argb);	
-				if(pixel<0)pixel=0;
-				else if(pixel>255)pixel=255;
-				arrayLP[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
-			}
-		}
-	}
-	
-	//LaPlace Kantendetektion -> 3X3 Matrix
-	private int getPixelFromLP3(int x, int y, int width, int[] argb){
-		int pix2 = argb[(y-1)*width+x]&0xff;
-		int pix4 = argb[y*width+(x-1)]&0xff;
-		int pix5 = argb[y*width+x]&0xff;
-		int pix6 = argb[(y)*width+(x+1)]&0xff;
-		int pix8 = argb[(y+1)*width+(x)]&0xff;
-		int pixel = (-pix2 - pix4 + 4*pix5 -pix6 - pix8);
-		return pixel;
-	}
-	
-	//LaPlace Kantendetektion -> 5X5 Matrix
-	private int getPixelFromLP5(int x, int y, int width, int[] argb){
-		int pix02 = argb[(y-2)*width+x]&0xff;
-		int pix11 = argb[(y-1)*width+(x-1)]&0xff;
-		int pix12 = argb[(y-1)*width+x]&0xff;
-		int pix13 = argb[(y-1)*width+(x+1)]&0xff;
-		int pix20 = argb[y*width+(x-2)]&0xff;
-		int pix21 = argb[y*width+(x-1)]&0xff;
-		int pix22 = argb[y*width+x]&0xff;
-		int pix23 = argb[y*width+(x+1)]&0xff;
-		int pix24 = argb[y*width+(x+2)]&0xff;
-		int pix31 = argb[(y+1)*width+(x-1)]&0xff;
-		int pix32 = argb[(y+1)*width+x]&0xff;
-		int pix33 = argb[(y+1)*width+(x+1)]&0xff;
-		int pix42 = argb[(y+2)*width+x]&0xff;
-		int pixel = (-pix02 - pix11 -(2*pix12)- pix13 -pix20 - (2*pix21) +(16*pix22) -(2*pix23)
-				- pix24 - pix31 -(2+pix32) -pix33 - pix42);
-		return pixel;
-	}
-	
-	
-	
-	//Gauss Filter um das Bild zu glätten
-	private void gaussFilterOperation(int width, int height, int sizeBorder, int gridSize, int[] argb, int[] updArray ){
-		int pixel;
-		for (int y = sizeBorder; y < height-sizeBorder; y++) {
-			for (int x = sizeBorder; x<width -sizeBorder; x++) {
-				pixel = getPixelFromGauss5x5Matrix(x, y, width, gridSize, sizeBorder,  argb) ;
-				updArray[y*width+x] = ((0xFF << 24) | (pixel << 16) | (pixel << 8) | pixel);
-			}
-		}
-	}
-		
-	//5x5 Matrix für den Gauss Filter
-	private int getPixelFromGauss5x5Matrix(int x, int y, int width, int gridSize, int sizeBorder, int[] argb){
-		int [][] a= new int[gridSize][gridSize];
-		for (int j = -sizeBorder; j < sizeBorder; j++) {
-			for (int i = -sizeBorder; i<sizeBorder; i++) {
-				a[i+2][j+2] = argb[(y-j)*width+(x-i)]&0x000000FF;	
-			}
-		}
-		double pixel = (1d/273*a[0][0])+(4d/273*a[0][1])+(7d/273*a[0][2])+(4d/273*a[0][3])+(1d/273*a[0][4])
-				+(4d/273*a[1][0])+(16d/273*a[1][1])+(26d/273*a[1][2])+(16d/273*a[1][3])+(4d/273*a[1][4])
-				+(7d/273*a[2][0])+(26d/273*a[2][1])+(41d/273*a[2][2])+(26d/273*a[2][3])+(7d/273*a[2][4])
-				+(4d/273*a[3][0])+(16d/273*a[3][1])+(26d/273*a[3][2])+(16d/273*a[3][3])+(4d/273*a[3][4])
-				+(1d/273*a[4][0])+(4d/273*a[4][1])+(7d/273*a[4][2])+(4d/273*a[4][3])+(1d/273*a[4][4]);
-		int pix = (int)pixel;
-		if(pix<0)pix=0;
-		else if(pix>255)pix=255;
-		return pix;
-	}
-	
-	
-	
-	
-	
-	
+
 	// ++++++++++++++++++++++++++++++++++++++Graphic....+++++++++++++++++++++++++++++++++++++++++
 
 	

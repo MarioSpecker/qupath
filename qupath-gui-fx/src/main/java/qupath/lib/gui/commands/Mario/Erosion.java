@@ -1,6 +1,6 @@
 package qupath.lib.gui.commands.Mario;
-
 import java.awt.image.BufferedImage;
+import qupath.lib.gui.commands.Mario.interfa.MorphOperations;
 
 public class Erosion implements MorphOperations {
 

@@ -1,4 +1,4 @@
-package qupath.lib.gui.commands.Mario;
+package qupath.lib.gui.commands.Mario.interfa;
 
 import java.awt.image.BufferedImage;
 

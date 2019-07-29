@@ -1,4 +1,5 @@
 package qupath.lib.gui.commands.Mario;
+import qupath.lib.gui.commands.Mario.interfa.Image;
 
 public class BinaryImage implements Image {
 
