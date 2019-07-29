@@ -20,24 +20,6 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -90,15 +72,10 @@ public class MyPluginCommand implements PathCommand {
 	private Stage dialog;
 	private QuPathGUI qupath;
 	private int[] argb;
-	
-
 	private static Rectangle[][] rec;
 	private boolean[][] kernel;
 	private int[] resizedARGB;
 	private int[] updatedArray;
-	
-
-
 	private int[][] laPlaceFilter;
 	private VBox vBoxRightBorder;
 	private BorderPane root;
@@ -218,7 +195,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 		
 		
-		private void drawImage(int height, int width, int[] rgb) {
+	private void drawImage(int height, int width, int[] rgb) {
 		qupath.getViewer().getThumbnail().setRGB(0, 0, width, height, rgb, 0, width);
 		qupath.getViewer().repaintEntireImage();
 	}
@@ -327,7 +304,7 @@ public class MyPluginCommand implements PathCommand {
 		getComboBox().getSelectionModel().select(0);
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
-				
+
 				selectOperation(selected);
 			}    
 		});
@@ -673,6 +650,7 @@ public class MyPluginCommand implements PathCommand {
 
 
 
+	@SuppressWarnings("restriction")
 	public VBox getvBoxRightBorder() {
 		return vBoxRightBorder;
 	}
@@ -682,6 +660,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 
 
+	@SuppressWarnings("restriction")
 	public VBox getvBoxLeftBorder() {
 		return vBoxLeftBorder;
 	}
@@ -696,6 +675,7 @@ public class MyPluginCommand implements PathCommand {
 
 
 
+	@SuppressWarnings("restriction")
 	public BorderPane getRoot() {
 		return root;
 	}
@@ -704,6 +684,7 @@ public class MyPluginCommand implements PathCommand {
 		this.root = root;
 	}
 
+	@SuppressWarnings("restriction")
 	public Button getBtn1() {
 		return btn1;
 	}
@@ -712,6 +693,7 @@ public class MyPluginCommand implements PathCommand {
 		this.btn1 = btn1;
 	}
 
+	@SuppressWarnings("restriction")
 	public Button getBtn2() {
 		return btn2;
 	}
@@ -720,6 +702,7 @@ public class MyPluginCommand implements PathCommand {
 		this.btn2 = btn2;
 	}
 
+	@SuppressWarnings("restriction")
 	public Button getBtn3() {
 		return btn3;
 	}
