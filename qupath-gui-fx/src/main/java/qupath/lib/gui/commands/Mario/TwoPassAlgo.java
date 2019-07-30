@@ -50,12 +50,18 @@ public class TwoPassAlgo {
 				int pos = y*width+x;
 				
 				if((getArgb()[pos]&0xff)!=0){
-					if(y==0&&x==0){
+					neighbour = checkNeighbour(x, y, width);
+					if(neighbour==0){
 						Set<Integer> a = new HashSet<Integer>();
-						startArray[pos] = getLabelCounter();
-						
+						a.add(getLabelCounter());
+	                    allSets.add(a);
+	                    getStartArray()[pos] = getLabelCounter();
 						setLabelCounter(getLabelCounter()+1);
-
+					}
+					else if(neighbour==1)
+						getStartArray()[pos] = getLabelCounter();
+					else{
+					
 					}
 						
 					
@@ -64,9 +70,38 @@ public class TwoPassAlgo {
 		}
 	}
 	
-//	private void checkNeighbours(int width, int height, int[] startArray){
-//		if()
-//	}
+	
+	private int checkNeighbour(int x, int y, int width){
+		int counter =0;
+		int pix00, pix01, pix02, pix10;
+		int pos00 = (y-1)*width+(x-1);
+		int pos01 = (y-1)*width+(x-1);
+		int pos02 = (y-1)*width+(x-1);
+		int pos10 = (y-1)*width+(x-1);
+		if(pos00<=0){
+			pix00 = getArgb()[pos00]&0xff;
+		}
+		else if(pos01<=0){
+			pix01 = getArgb()[pos00]&0xff;
+		}
+		else if(pos02<=0){
+			pix02 = getArgb()[(y-1)*width+(x+1)]&0xff;
+		}
+		else if(pos10<=0){
+			pix10 = getArgb()[(y)*width+(x-1)]&0xff;
+		}
+		return counter;
+	}
+	
+	
+	private void checkNeighbourNotBackground(int pix, int counter){
+		if(pix==0){
+			
+		}
+		else
+			counter++;
+	}
+	
 
 
 
