@@ -90,6 +90,8 @@ public class TwoPassAlgo {
 		}
 	}
 	
+
+	
 	private void checkNeighbours(int x, int y, int width, Set<Integer> neighbours) {
         for (int i = -1; i < 1; i++) {
             for (int j = -1; j < 2; j++) {

@@ -22,6 +22,8 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
 
+import org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSet;
+
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -58,8 +60,11 @@ import javafx.scene.control.ToggleGroup;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.io.ByteArrayInputStream;
-
+import java.awt.geom.*;
+import java.awt.Polygon;
 import javafx.scene.control.ToggleButton;
 
 
@@ -87,7 +92,7 @@ public class MyPluginCommand implements PathCommand {
 	private Button btn4;
 	private Button btnOk;
 	private Button btnCancel;
-	
+	private HashMap<Integer,Polygon> polyMap;
 
 	private ComboBox<String> comboBox;
 	private RadioButton radioBtn3; 
@@ -119,6 +124,7 @@ public class MyPluginCommand implements PathCommand {
 		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"7","26","41","26","7"},{"4","16","26","16","4"},{"1","4","7","4","1"}};
 		this.choiceOperation  = "NOOPERATION";
 		this.sizeBorder = 1;
+		this.polyMap = new HashMap<>();
 		
 	}
 
@@ -160,6 +166,7 @@ public class MyPluginCommand implements PathCommand {
 			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), argb);
 			tw.createFirstStep();
 			tw.createSecondStep();
+			createListsWithPolygons(getImg().getWidth(), getImg().getHeight(), tw.getLabel());
 			break;
 		case "GRAYSCALE":
 			Image greyscale = new GreyscaleImage();
@@ -258,7 +265,17 @@ public class MyPluginCommand implements PathCommand {
 		return k;
 	}
 	
-	
+	public void invertImage(int width, int height, int[] argb){
+		for(int y=0; y<height; y++){
+			for(int x=0; x<width; x++){
+				int pos = y*width+x;
+				if((argb[pos]&0xff)==255)
+					argb[pos] = 0x00000000; 
+				else
+					argb[pos] = 0xffffffff;
+			}
+		}
+	}
 
 	public void printKernel(boolean[][] kernel) {
 		for (boolean[] xS : kernel) {
@@ -270,6 +287,39 @@ public class MyPluginCommand implements PathCommand {
 		}
 
 	}
+	
+	
+	private void createListsWithPolygons(int width, int height, int[][] label){
+		for(int y=0;y<height;y++){
+			for(int x=0;x<width;x++){
+				int pixLabel = label[y][x];
+				if(pixLabel==0){
+
+				}
+				else{
+					
+					if(!this.polyMap.containsKey(pixLabel))
+					{
+						Polygon poly = new Polygon();
+						poly.addPoint(x, y);
+						this.polyMap.put(pixLabel, poly);
+					}
+					else{
+						this.polyMap.get(pixLabel).addPoint(x, y);
+					}
+				}
+
+			}
+		}
+		for(int y=0;y<3;y++){
+			for(int x=0;x<width;x++){
+			System.out.println(polyMap.get(1).);
+			}}
+		
+	}
+	
+	
+	
 
 	
 
