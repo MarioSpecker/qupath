@@ -4,6 +4,7 @@ import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.Mario.BinaryImage;
 import qupath.lib.gui.commands.Mario.Dilatation;
 import qupath.lib.gui.commands.Mario.Erosion;
+import qupath.lib.gui.commands.Mario.TwoPassAlgo;
 import qupath.lib.gui.commands.Mario.interfa.Filter;
 import qupath.lib.gui.commands.Mario.GaussFilter;
 import qupath.lib.gui.commands.Mario.GreyscaleImage;
@@ -20,6 +21,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
+
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -155,6 +157,9 @@ public class MyPluginCommand implements PathCommand {
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
+			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), argb);
+			tw.createFirstStep();
+			tw.createSecondStep();
 			break;
 		case "GRAYSCALE":
 			Image greyscale = new GreyscaleImage();

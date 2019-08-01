@@ -1,5 +1,6 @@
 package qupath.lib.gui.commands.Mario;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
@@ -7,103 +8,109 @@ import java.util.Set;
 public class TwoPassAlgo {
 
 	
-	private int[] startArray;
+	private int[][] label;
 	private int[] argb;
 	private int imgWidth;
 	private int imgHeight;
 	List<Set<Integer>> allSets; 
 	private int labelCounter;
 	private int neighbour;
+	private int matrix[][];
+	
 	
 	public TwoPassAlgo(int imgWidth, int imgHeight, int[]argb){
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
-		//label = new int[imgWidth][imgHeight];
-		startArray = new int[imgWidth * imgHeight];
+		label = new int[imgHeight][imgWidth];
 		this.argb = argb;
 		allSets = new ArrayList<Set<Integer>>();
-		labelCounter = 1; 
+		labelCounter = 0; 
 		neighbour = 0;
+		matrix = new int[imgHeight][imgWidth];
+	}
+	
+	
+	
+	
+	
+	
+	public void createFirstStep(){
+		for (int x = 0; x < getImgHeight(); x++) {
+            for (int y = 0; y < getImgWidth(); y++) {
+                matrix[x][y] = argb[x*getImgWidth()+y]&0xFF;
+           }
+        }
 		
+        for (int x = 0; x < getImgHeight(); x++) {
+            for (int y = 0; y < getImgWidth(); y++) {
+                if ((getMatrix()[x][y]) != 0) {
+                    Set<Integer> neighbours = new HashSet<>();
+                    checkNeighbours(x, y, getImgWidth(), neighbours);
+                    if (neighbours.isEmpty()) {
+                        Set<Integer> set = new HashSet<>();
+                        set.add(getLabelCounter());
+                        getAllSets().add(set);
+                        getLabel()[x][y] = getLabelCounter();
+                        setLabelCounter(getLabelCounter() + 1);
+                    } else if (neighbours.size() == 1) {
+                    	getLabel()[x][y] = neighbours.iterator().next();
+                    } else if (neighbours.size() > 1) {
+                        int pixValue = Collections.min(neighbours);
+                        getLabel()[x][y] = pixValue;
+                        for (int neighbor : neighbours) {
+                            getAllSets().get(neighbor).addAll(neighbours);
+                        }
+                    }
+                }
+            }
+        }
+       
+       
+        
 	}
 	
 	
-	
-	private void createStartArray(){
-		for(int y=0;y<getImgHeight();y++){
-			for(int x=0;x<getImgWidth();x++){
-				int pos = y*getImgWidth()+x;
-				if((getArgb()[pos]&0xff)==0){
-					getStartArray()[pos] = 0;
-				}
-				else{
-					getStartArray()[pos] = 1;
-				}
-			}
+	public void createSecondStep(){
+		for (int x = 0; x < getImgHeight(); x++) {
+            for (int y = 0; y < getImgWidth(); y++) {
+                Set<Integer> ar = getAllSets().get(getLabel()[x][y]);
+                for(int l : ar){
+                    if(l<getLabel()[x][y])
+                    	getLabel()[x][y] = l;
+                        
+                }
+                
+            }
+        }
+		for (int x = 0; x < getImgHeight(); x++) {
+            for (int y = 0; y < getImgWidth(); y++) {
+            	System.out.print(getLabel()[x][y]);
+            }
+            System.out.println();
 		}
 	}
 	
-	
-	private void createFirstStepArray(int width, int height, int[] startArray){
-		for(int y=0;y<getImgHeight();y++){
-			for(int x=0;x<getImgWidth();x++){
-				int pos = y*width+x;
-				
-				if((getArgb()[pos]&0xff)!=0){
-					neighbour = checkNeighbour(x, y, width);
-					if(neighbour==0){
-						Set<Integer> a = new HashSet<Integer>();
-						a.add(getLabelCounter());
-	                    allSets.add(a);
-	                    getStartArray()[pos] = getLabelCounter();
-						setLabelCounter(getLabelCounter()+1);
-					}
-					else if(neighbour==1)
-						getStartArray()[pos] = getLabelCounter();
-					else{
-						
-					}
-						
-					
-				}
-			}
-		}
-	}
+	private void checkNeighbours(int x, int y, int width, Set<Integer> neighbours) {
+        for (int i = -1; i < 1; i++) {
+            for (int j = -1; j < 2; j++) {
+
+                if (x + i < 0 || y + j < 0 || y + j >= width) {
+                } else {
+                    if ((i == 0 && j == 0) || (i == 0 && j == 1)) {
+
+                    } else {
+                        if (getLabel()[x + i][y + j] != 0) {
+                            neighbours.add(getLabel()[x + i][y + j]);
+                        }
+                    }
+                }
+            }
+        }
+
+    }
 	
 	
-	private int checkNeighbour(int x, int y, int width){
-		int counter =0;
-		int pix00, pix01, pix02, pix10;
-		int pos00 = (y-1)*width+(x-1);
-		int pos01 = (y-1)*width+(x-1);
-		int pos02 = (y-1)*width+(x-1);
-		int pos10 = (y-1)*width+(x-1);
-		if(pos00<=0){
-			pix00 = getStartArray()[pos00];
-			checkNeighbourNotBackground(pix00, counter);
-		}
-		else if(pos01<=0){
-			pix01 = getStartArray()[pos01];
-			checkNeighbourNotBackground(pix01, counter);
-		}
-		else if(pos02<=0){
-			pix02 = getStartArray()[pos02];
-			checkNeighbourNotBackground(pix02, counter);
-		}
-		else if(pos10<=0){
-			pix10 = getStartArray()[pos10];
-			checkNeighbourNotBackground(pix10, counter);
-		}
-		return counter;
-	}
 	
-	
-	private void checkNeighbourNotBackground(int pix, int counter){
-		if(pix==0){
-		}
-		else
-			counter++;
-	}
 	
 
 
@@ -112,15 +119,78 @@ public class TwoPassAlgo {
 
 
 
-	public int[] getStartArray() {
-		return startArray;
+	
+
+
+	public int[][] getLabel() {
+		return label;
 	}
 
 
 
-	public void setStartArray(int[] startArray) {
-		this.startArray = startArray;
+
+
+
+	public void setLabel(int[][] label) {
+		this.label = label;
 	}
+
+
+
+
+
+
+	public List<Set<Integer>> getAllSets() {
+		return allSets;
+	}
+
+
+
+
+
+
+	public void setAllSets(List<Set<Integer>> allSets) {
+		this.allSets = allSets;
+	}
+
+
+
+
+
+
+	public int getNeighbour() {
+		return neighbour;
+	}
+
+
+
+
+
+
+	public void setNeighbour(int neighbour) {
+		this.neighbour = neighbour;
+	}
+
+
+
+
+
+
+	public int[][] getMatrix() {
+		return matrix;
+	}
+
+
+
+
+
+
+	public void setMatrix(int[][] matrix) {
+		this.matrix = matrix;
+	}
+
+
+
 
 
 
