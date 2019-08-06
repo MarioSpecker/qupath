@@ -30,31 +30,8 @@ public class TwoPassAlgo {
 	private static final int BORDERSIZE = 4;
 	private int currentX;  
 	private int currentY ;
+	private int direction;
 	
-	public int getCurrentX() {
-		return currentX;
-	}
-
-
-
-
-	public void setCurrentX(int currentX) {
-		this.currentX = currentX;
-	}
-
-
-
-
-	public int getCurrentY() {
-		return currentY;
-	}
-
-
-
-
-	public void setCurrentY(int currentY) {
-		this.currentY = currentY;
-	}
 
 
 
@@ -72,13 +49,27 @@ public class TwoPassAlgo {
 		contourArray = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
 		resizedArrayWidth = imgWidth+BORDERSIZE;
 		resizedArrayHeight = imgHeight+BORDERSIZE;
-		
+		direction = 1;
 		
 	}
 	
 	
 	
 	
+	public int getDirection() {
+		return direction;
+	}
+
+
+
+
+	public void setDirection(int direction) {
+		this.direction = direction;
+	}
+
+
+
+
 	public void createFirstStep(){
 		for (int x = 0; x < getImgHeight(); x++) {
             for (int y = 0; y < getImgWidth(); y++) {
@@ -173,80 +164,111 @@ public class TwoPassAlgo {
 		int currentX  = x;
 		int currentY = y;
 		int latestAddedX = x;
-		int lattestAddedY = y;
-		int direction = 1;
-		int turnClockwise = 0;
-		ResultPolygon rpoly = new ResultPolygon(id, 0);
+		int latestAddedY = y;
+		int countRotation = 0;
 		do{
-			int pixel = getResizedArrayWithLabels()[currentY*getResizedArrayWidth()+currentX];
+			switch(direction){
+			case 1: directionNorth(currentX, currentY, latestAddedX, latestAddedY);
+				break;
+			case 2: directionEast(currentX, currentY, latestAddedX, latestAddedY);
+				break;
+			case 3: directionSouth(currentX, currentY, latestAddedX, latestAddedY);
+				break;
+			case 4: directionWest(currentX, currentY, latestAddedX, latestAddedY);
+				break;
+			}
+			int pixel = getResizedArrayWithLabels()[(currentY)*getResizedArrayWidth()+(currentX)];
 			if(pixel!=0){
-				
-				else{
-					
+				if(getCurrentX()==latestAddedX&&getCurrentY()==latestAddedY){
+				}else{
+					int pixWhite = 0xffffffff;
+					contourArray[getCurrentY()*getResizedArrayWidth()+getCurrentX()] = (0xFF << 24) | (pixWhite << 16) | (pixWhite << 8) | pixWhite;
+					latestAddedX = getCurrentX();
+					latestAddedY = getCurrentY();
+					polyMap.get(id).addPoint(getCurrentX(), getCurrentY());
 				}
+				countRotation=0;
 				
-			
-
-
+			}else{
+				setDirection(getDirection()+1);
+				countRotation+=1;
+			}
+			if(countRotation==4){
+				setDirection(getDirection()-2);
+			}
+			if(getDirection()==5)
+				setDirection(1);
+			if(getDirection()==0)
+				setDirection(4);
+				
 		}while((x!=currentX)&&(y!=currentY));
 	}
 		
 		
-		private void directionNorth(int currentX, int currentY, int latestAddedX, int latestAddedY){
-			if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
-				setCurrentX(currentX-=1);
-				setCurrentY(currentY-=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX)]!=0){
-				setCurrentY(currentY-=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
-				setCurrentX(currentX+=1);
-				setCurrentY(currentY-=1);
-			}else{}
+	private void directionNorth(int currentX, int currentY, int latestAddedX, int latestAddedY){
+		if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
+			setCurrentX(currentX-=1);
+			setCurrentY(currentY-=1);
+			setDirection(getDirection()-1);
 		}
-		
-		private void directionEast(int currentX, int currentY, int latestAddedX, int latestAddedY){
-			if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
-				setCurrentX(currentX+=1);
-				setCurrentY(currentY-=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY)*getResizedArrayWidth()+(currentX+1)]!=0){
-				setCurrentX(currentX+=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
-				setCurrentX(currentX+=1);
-				setCurrentY(currentY+=1);
-			}else{}
+		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX)]!=0){
+			setCurrentY(currentY-=1);
 		}
-		
-		private void directionSouth(int currentX, int currentY, int latestAddedX, int latestAddedY){
-			if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
-				setCurrentX(currentX+=1);
-				setCurrentY(currentY+=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX)]!=0){
-				setCurrentY(currentY+=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX-1)]!=0){
-				setCurrentX(currentX-=1);
-				setCurrentY(currentY+=1);
-			}else{}
+		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
+			setCurrentX(currentX+=1);
+			setCurrentY(currentY-=1);
+			setDirection(getDirection()+1);
+		}else{}
+	}
+
+	private void directionEast(int currentX, int currentY, int latestAddedX, int latestAddedY){
+		if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
+			setCurrentX(currentX+=1);
+			setCurrentY(currentY-=1);
+			setDirection(getDirection()-1);
+			
 		}
-		
-		private void directionWest(int currentX, int currentY, int latestAddedX, int latestAddedY){
-			if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
-				setCurrentX(currentX-=1);
-				setCurrentY(currentY+=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX)]!=0){
-				setCurrentX(currentX-=1);
-			}
-			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
-				setCurrentX(currentX-=1);
-				setCurrentY(currentY-=1);
-			}else{}
+		else if(getResizedArrayWithLabels()[(currentY)*getResizedArrayWidth()+(currentX+1)]!=0){
+			setCurrentX(currentX+=1);
 		}
+		else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
+			setCurrentX(currentX+=1);
+			setCurrentY(currentY+=1);
+			setDirection(getDirection()+1);
+		}else{}
+	}
+
+	private void directionSouth(int currentX, int currentY, int latestAddedX, int latestAddedY){
+		if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
+			setCurrentX(currentX+=1);
+			setCurrentY(currentY+=1);
+			setDirection(getDirection()-1);
+		}
+		else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX)]!=0){
+			setCurrentY(currentY+=1);
+		}
+		else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX-1)]!=0){
+			setCurrentX(currentX-=1);
+			setCurrentY(currentY+=1);
+			setDirection(getDirection()+1);
+		}else{}
+	}
+
+	private void directionWest(int currentX, int currentY, int latestAddedX, int latestAddedY){
+		if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX-1)]!=0){
+			setCurrentX(currentX-=1);
+			setCurrentY(currentY+=1);
+			setDirection(getDirection()-1);
+		}
+		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
+			setCurrentX(currentX-=1);
+		}
+		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
+			setCurrentX(currentX-=1);
+			setCurrentY(currentY-=1);
+			setDirection(getDirection()+1);
+		}else{}
+	}
 	
 	
 	
@@ -387,6 +409,31 @@ public class TwoPassAlgo {
 
 	public int[] getArgb() {
 		return argb;
+	}
+	
+	public int getCurrentX() {
+		return currentX;
+	}
+
+
+
+
+	public void setCurrentX(int currentX) {
+		this.currentX = currentX;
+	}
+
+
+
+
+	public int getCurrentY() {
+		return currentY;
+	}
+
+
+
+
+	public void setCurrentY(int currentY) {
+		this.currentY = currentY;
 	}
 
 
