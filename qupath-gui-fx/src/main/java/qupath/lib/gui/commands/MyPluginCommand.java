@@ -61,10 +61,14 @@ import javafx.scene.control.ToggleGroup;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.io.ByteArrayInputStream;
 import java.awt.geom.*;
 import java.awt.Polygon;
+
 import javafx.scene.control.ToggleButton;
 
 
@@ -166,7 +170,8 @@ public class MyPluginCommand implements PathCommand {
 			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), argb);
 			tw.createFirstStep();
 			tw.createSecondStep();
-			createListsWithPolygons(getImg().getWidth(), getImg().getHeight(), tw.getLabel());
+		
+			
 			break;
 		case "GRAYSCALE":
 			Image greyscale = new GreyscaleImage();
@@ -182,11 +187,16 @@ public class MyPluginCommand implements PathCommand {
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "EROSION":
+		
+			//Erosion erhät man wenn man auf ein Binärbild eine inversion durchführt, darauf dann eine Dilatation und
+			//zum Schluss nochmal eine Inversion
+			invertImage(img.getWidth(), img.getHeight(), getArgb());
 			BufferedImage erosionImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] erosionArray = new int[erosionImage.getHeight() * erosionImage.getWidth()];
-			MorphOperations erosion = new Erosion();
-			erosion.prepareMorphOperation(erosionImage, erosionArray ,getArgb(), getImg().getWidth(), getImg().getHeight());
-			erosion.executeMorpOperation(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, getArgb(), getImg().getWidth(), getHalfKernelSize(), getKernel());
+			MorphOperations dilatation1 = new Dilatation();
+			dilatation1.prepareMorphOperation(erosionImage, erosionArray, getArgb(), getImg().getWidth(), getImg().getHeight());
+			dilatation1.executeMorpOperation(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, getArgb(), getImg().getWidth(), getHalfKernelSize(), getKernel());			
+			invertImage(img.getWidth(), img.getHeight(), getArgb());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GAUSS":
@@ -201,7 +211,10 @@ public class MyPluginCommand implements PathCommand {
 			break;
 		
 		case "NOOPERATION":
+			
+	
 			break;
+		
 		}
 		
 	}
@@ -289,36 +302,10 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	private void createListsWithPolygons(int width, int height, int[][] label){
-		for(int y=0;y<height;y++){
-			for(int x=0;x<width;x++){
-				int pixLabel = label[y][x];
-				if(pixLabel==0){
-
-				}
-				else{
-					
-					if(!this.polyMap.containsKey(pixLabel))
-					{
-						Polygon poly = new Polygon();
-						poly.addPoint(x, y);
-						this.polyMap.put(pixLabel, poly);
-					}
-					else{
-						this.polyMap.get(pixLabel).addPoint(x, y);
-					}
-				}
-
-			}
-		}
-		for(int y=0;y<3;y++){
-			for(int x=0;x<width;x++){
-			System.out.println(polyMap.get(1).);
-			}}
+	
 		
-	}
-	
-	
+
+
 	
 
 	

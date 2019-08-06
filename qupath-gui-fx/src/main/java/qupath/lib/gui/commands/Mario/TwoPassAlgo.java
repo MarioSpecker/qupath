@@ -1,10 +1,16 @@
 package qupath.lib.gui.commands.Mario;
 
+import java.awt.Polygon;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
+
+
 public class TwoPassAlgo {
 
 	
@@ -16,8 +22,43 @@ public class TwoPassAlgo {
 	private int labelCounter;
 	private int neighbour;
 	private int matrix[][];
+	private HashMap<Integer,ResultPolygon> polyMap;
+	private int[] resizedArrayWithLabels;
+	private int[] contourArray;
+	private int resizedArrayWidth;
+	private int resizedArrayHeight;
+	private static final int BORDERSIZE = 4;
+	private int currentX;  
+	private int currentY ;
 	
-	
+	public int getCurrentX() {
+		return currentX;
+	}
+
+
+
+
+	public void setCurrentX(int currentX) {
+		this.currentX = currentX;
+	}
+
+
+
+
+	public int getCurrentY() {
+		return currentY;
+	}
+
+
+
+
+	public void setCurrentY(int currentY) {
+		this.currentY = currentY;
+	}
+
+
+
+
 	public TwoPassAlgo(int imgWidth, int imgHeight, int[]argb){
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
@@ -27,9 +68,13 @@ public class TwoPassAlgo {
 		labelCounter = 0; 
 		neighbour = 0;
 		matrix = new int[imgHeight][imgWidth];
+		resizedArrayWithLabels = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
+		contourArray = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
+		resizedArrayWidth = imgWidth+BORDERSIZE;
+		resizedArrayHeight = imgHeight+BORDERSIZE;
+		
+		
 	}
-	
-	
 	
 	
 	
@@ -37,7 +82,7 @@ public class TwoPassAlgo {
 	public void createFirstStep(){
 		for (int x = 0; x < getImgHeight(); x++) {
             for (int y = 0; y < getImgWidth(); y++) {
-                matrix[x][y] = argb[x*getImgWidth()+y]&0xFF;
+                getMatrix()[x][y] = getArgb()[x*getImgWidth()+y]&0xFF;
            }
         }
 		
@@ -64,29 +109,19 @@ public class TwoPassAlgo {
                 }
             }
         }
-       
-       
-        
-	}
+ 	}
 	
 	
 	public void createSecondStep(){
 		for (int x = 0; x < getImgHeight(); x++) {
-            for (int y = 0; y < getImgWidth(); y++) {
-                Set<Integer> ar = getAllSets().get(getLabel()[x][y]);
-                for(int l : ar){
-                    if(l<getLabel()[x][y])
-                    	getLabel()[x][y] = l;
-                        
-                }
-                
-            }
-        }
-		for (int x = 0; x < getImgHeight(); x++) {
-            for (int y = 0; y < getImgWidth(); y++) {
-            	System.out.print(getLabel()[x][y]);
-            }
-            System.out.println();
+			for (int y = 0; y < getImgWidth(); y++) {
+				Set<Integer> ar = getAllSets().get(getLabel()[x][y]);
+				for(int l : ar){
+					if(l<getLabel()[x][y])
+						getLabel()[x][y] = l;
+				}
+
+			}
 		}
 	}
 	
@@ -108,20 +143,151 @@ public class TwoPassAlgo {
                 }
             }
         }
-
     }
 	
 	
 	
+	private void searchContourStart(){
+		for(int y = 0;y<getResizedArrayHeight();y++){
+			for(int x = 0;x<getResizedArrayWidth();x++){
+				if(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]!=0){
+					if(polyMap.containsKey(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]));
+					else{
+						int id = getResizedArrayWithLabels()[y*getResizedArrayWidth()+x];
+						createContour(x, y, id);
+					}
+				}
+			}
+		}
+	}
+	
 	
 
-
-
+	//direction clockwise -> 0 is North......
 	
 
-
-
 	
+	
+		
+	private void createContour(int x, int y, int id){
+		int currentX  = x;
+		int currentY = y;
+		int latestAddedX = x;
+		int lattestAddedY = y;
+		int direction = 1;
+		int turnClockwise = 0;
+		ResultPolygon rpoly = new ResultPolygon(id, 0);
+		do{
+			int pixel = getResizedArrayWithLabels()[currentY*getResizedArrayWidth()+currentX];
+			if(pixel!=0){
+				
+				else{
+					
+				}
+				
+			
+
+
+		}while((x!=currentX)&&(y!=currentY));
+	}
+		
+		
+		private void directionNorth(int currentX, int currentY, int latestAddedX, int latestAddedY){
+			if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
+				setCurrentX(currentX-=1);
+				setCurrentY(currentY-=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX)]!=0){
+				setCurrentY(currentY-=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
+				setCurrentX(currentX+=1);
+				setCurrentY(currentY-=1);
+			}else{}
+		}
+		
+		private void directionEast(int currentX, int currentY, int latestAddedX, int latestAddedY){
+			if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
+				setCurrentX(currentX+=1);
+				setCurrentY(currentY-=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY)*getResizedArrayWidth()+(currentX+1)]!=0){
+				setCurrentX(currentX+=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
+				setCurrentX(currentX+=1);
+				setCurrentY(currentY+=1);
+			}else{}
+		}
+		
+		private void directionSouth(int currentX, int currentY, int latestAddedX, int latestAddedY){
+			if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
+				setCurrentX(currentX+=1);
+				setCurrentY(currentY+=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX)]!=0){
+				setCurrentY(currentY+=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX-1)]!=0){
+				setCurrentX(currentX-=1);
+				setCurrentY(currentY+=1);
+			}else{}
+		}
+		
+		private void directionWest(int currentX, int currentY, int latestAddedX, int latestAddedY){
+			if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
+				setCurrentX(currentX-=1);
+				setCurrentY(currentY+=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX)]!=0){
+				setCurrentX(currentX-=1);
+			}
+			else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
+				setCurrentX(currentX-=1);
+				setCurrentY(currentY-=1);
+			}else{}
+		}
+	
+	
+	
+	private void labelToArray(int width, int height){
+		for(int y = 0;y<height;y++){
+			for(int x = 0;x<width;x++){
+				getResizedArrayWithLabels()[(y+1)*width+(x+1)] = getLabel()[y][x];
+			}
+		}
+	}
+	
+	
+	
+	
+	
+	public HashMap<Integer, ResultPolygon> getPolyMap() {
+		return polyMap;
+	}
+
+
+
+
+	public void setPolyMap(HashMap<Integer, ResultPolygon> polyMap) {
+		this.polyMap = polyMap;
+	}
+
+
+
+
+	public int[] getResizedArrayWithLabels() {
+		return resizedArrayWithLabels;
+	}
+
+
+
+
+	public void setResizedArrayWithLabels(int[] resizedArrayWithLabels) {
+		this.resizedArrayWithLabels = resizedArrayWithLabels;
+	}
+
+
 
 
 	public int[][] getLabel() {
@@ -166,7 +332,30 @@ public class TwoPassAlgo {
 
 
 
+	public int getResizedArrayWidth() {
+		return resizedArrayWidth;
+	}
 
+
+
+
+	public void setResizedArrayWidth(int resizedArrayWidth) {
+		this.resizedArrayWidth = resizedArrayWidth;
+	}
+
+
+
+
+	public int getResizedArrayHeight() {
+		return resizedArrayHeight;
+	}
+
+
+
+
+	public void setResizedArrayHeight(int resizedArrayHeight) {
+		this.resizedArrayHeight = resizedArrayHeight;
+	}
 
 
 	public void setNeighbour(int neighbour) {

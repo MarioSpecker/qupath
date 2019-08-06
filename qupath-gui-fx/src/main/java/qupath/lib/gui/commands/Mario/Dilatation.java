@@ -23,8 +23,8 @@ public class Dilatation implements MorphOperations{
 				int pos = y * width + x;
 				int pixelCenter = resizedArray[pos] & 0xff;
 				if (pixelCenter == 255) {
-					for (int j = -halfKernelSize; j <= -halfKernelSize; j++) {
-						for (int i = --halfKernelSize; i <= -halfKernelSize; i++) {
+					for (int j = -halfKernelSize; j <= halfKernelSize; j++) {
+						for (int i = -halfKernelSize; i <= halfKernelSize; i++) {
 							if (kernel[i + halfKernelSize][j + halfKernelSize] == true) {
 								int pix = resizedArray[(y - j) * width+ (x - i)] & 0xff;
 								if (pix == 0) {
