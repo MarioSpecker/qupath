@@ -96,7 +96,7 @@ public class MyPluginCommand implements PathCommand {
 	private Button btn4;
 	private Button btnOk;
 	private Button btnCancel;
-	private HashMap<Integer,Polygon> polyMap;
+	
 
 	private ComboBox<String> comboBox;
 	private RadioButton radioBtn3; 
@@ -128,7 +128,7 @@ public class MyPluginCommand implements PathCommand {
 		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"7","26","41","26","7"},{"4","16","26","16","4"},{"1","4","7","4","1"}};
 		this.choiceOperation  = "NOOPERATION";
 		this.sizeBorder = 1;
-		this.polyMap = new HashMap<>();
+		
 		
 	}
 
@@ -167,11 +167,12 @@ public class MyPluginCommand implements PathCommand {
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
-			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), argb);
+			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), getArgb());
 			tw.createFirstStep();
 			tw.createSecondStep();
-		
 			
+			//tw.pavlidisAlgo();
+			//drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GRAYSCALE":
 			Image greyscale = new GreyscaleImage();

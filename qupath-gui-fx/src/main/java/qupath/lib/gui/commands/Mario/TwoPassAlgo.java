@@ -31,7 +31,7 @@ public class TwoPassAlgo {
 	private int currentX;  
 	private int currentY ;
 	private int direction;
-	
+	private int[] resultContour;
 
 
 
@@ -50,6 +50,8 @@ public class TwoPassAlgo {
 		resizedArrayWidth = imgWidth+BORDERSIZE;
 		resizedArrayHeight = imgHeight+BORDERSIZE;
 		direction = 1;
+		resultContour = new int[imgWidth*imgWidth];
+		this.polyMap = new HashMap<>();
 		
 	}
 	
@@ -138,13 +140,16 @@ public class TwoPassAlgo {
 	
 	
 	
-	private void searchContourStart(){
+	public void searchContourStart(){
 		for(int y = 0;y<getResizedArrayHeight();y++){
 			for(int x = 0;x<getResizedArrayWidth();x++){
 				if(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]!=0){
+					
 					if(polyMap.containsKey(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]));
 					else{
+						
 						int id = getResizedArrayWithLabels()[y*getResizedArrayWidth()+x];
+						
 						createContour(x, y, id);
 					}
 				}
@@ -153,16 +158,12 @@ public class TwoPassAlgo {
 	}
 	
 	
-
-	//direction clockwise -> 0 is North......
-	
-
-	
-	
 		
-	private void createContour(int x, int y, int id){
-		int currentX  = x;
-		int currentY = y;
+	public void createContour(int x, int y, int id){
+		//int currentX  = x;
+		setCurrentX(x);
+		setCurrentY(y);
+		//int currentY = y;
 		int latestAddedX = x;
 		int latestAddedY = y;
 		int countRotation = 0;
@@ -185,7 +186,7 @@ public class TwoPassAlgo {
 					contourArray[getCurrentY()*getResizedArrayWidth()+getCurrentX()] = (0xFF << 24) | (pixWhite << 16) | (pixWhite << 8) | pixWhite;
 					latestAddedX = getCurrentX();
 					latestAddedY = getCurrentY();
-					polyMap.get(id).addPoint(getCurrentX(), getCurrentY());
+					//polyMap.get(id).addPoint(getCurrentX(), getCurrentY());
 				}
 				countRotation=0;
 				
@@ -204,7 +205,8 @@ public class TwoPassAlgo {
 		}while((x!=currentX)&&(y!=currentY));
 	}
 		
-		
+	
+	//checking All Pixels in Direction Nord
 	private void directionNorth(int currentX, int currentY, int latestAddedX, int latestAddedY){
 		if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
 			setCurrentX(currentX-=1);
@@ -221,6 +223,7 @@ public class TwoPassAlgo {
 		}else{}
 	}
 
+	//checking All Pixels in Direction East
 	private void directionEast(int currentX, int currentY, int latestAddedX, int latestAddedY){
 		if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
 			setCurrentX(currentX+=1);
@@ -238,6 +241,7 @@ public class TwoPassAlgo {
 		}else{}
 	}
 
+	//checking All Pixels in Direction South
 	private void directionSouth(int currentX, int currentY, int latestAddedX, int latestAddedY){
 		if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
 			setCurrentX(currentX+=1);
@@ -254,6 +258,7 @@ public class TwoPassAlgo {
 		}else{}
 	}
 
+	//checking All Pixels in Direction West
 	private void directionWest(int currentX, int currentY, int latestAddedX, int latestAddedY){
 		if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX-1)]!=0){
 			setCurrentX(currentX-=1);
@@ -272,18 +277,62 @@ public class TwoPassAlgo {
 	
 	
 	
-	private void labelToArray(int width, int height){
-		for(int y = 0;y<height;y++){
-			for(int x = 0;x<width;x++){
-				getResizedArrayWithLabels()[(y+1)*width+(x+1)] = getLabel()[y][x];
+	public void labelToArray(){
+		for(int y = 0;y<getImgHeight();y++){
+			for(int x = 0;x<getImgWidth();x++){
+				getResizedArrayWithLabels()[(y+2)*getImgWidth()+(x+2)] = getLabel()[y][x];
 			}
 		}
+	}
+	
+	
+	private void decreaseArray(){
+		for(int y = 0;y<getImgHeight();y++){
+			for(int x = 0;x<getImgWidth();x++){
+				getResultContour()[y*getImgWidth()+x] =  getContourArray()[(y+2)*getImgWidth()+(x+2)];
+			}
+		}
+	}
+	
+	
+	public void pavlidisAlgo(){
+		labelToArray();
+		searchContourStart();
+		decreaseArray();
 	}
 	
 	
 	
 	
 	
+	public int[] getContourArray() {
+		return contourArray;
+	}
+
+
+
+
+	public void setContourArray(int[] contourArray) {
+		this.contourArray = contourArray;
+	}
+
+
+
+
+	public int[] getResultContour() {
+		return resultContour;
+	}
+
+
+
+
+	public void setResultContour(int[] resultContour) {
+		this.resultContour = resultContour;
+	}
+
+
+
+
 	public HashMap<Integer, ResultPolygon> getPolyMap() {
 		return polyMap;
 	}
