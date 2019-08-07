@@ -166,11 +166,14 @@ public class MyPluginCommand implements PathCommand {
 			setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
-			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
+			
 			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), getArgb());
 			tw.createFirstStep();
 			tw.createSecondStep();
+			tw.labelToArray();
+			tw.searchContourStart();
 			
+			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			//tw.pavlidisAlgo();
 			//drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;

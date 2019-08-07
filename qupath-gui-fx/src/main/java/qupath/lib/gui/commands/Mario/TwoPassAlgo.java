@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
+import qupath.lib.gui.commands.Mario.ResultPolygon;
+import qupath.lib.roi.PolygonROI;
+
 
 public class TwoPassAlgo {
 
@@ -32,7 +35,7 @@ public class TwoPassAlgo {
 	private int currentY ;
 	private int direction;
 	private int[] resultContour;
-
+	private HashMap<Integer,Integer> labelAreaMap;
 
 
 
@@ -52,6 +55,7 @@ public class TwoPassAlgo {
 		direction = 1;
 		resultContour = new int[imgWidth*imgWidth];
 		this.polyMap = new HashMap<>();
+		this.labelAreaMap = new HashMap<>();
 		
 	}
 	
@@ -143,144 +147,136 @@ public class TwoPassAlgo {
 	public void searchContourStart(){
 		for(int y = 0;y<getResizedArrayHeight();y++){
 			for(int x = 0;x<getResizedArrayWidth();x++){
+				//System.out.print(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]);
 				if(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]!=0){
-					
-					if(polyMap.containsKey(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]));
+				
+					if(polyMap.containsKey(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x])){					
+					}
 					else{
-						
 						int id = getResizedArrayWithLabels()[y*getResizedArrayWidth()+x];
-						
+						ResultPolygon re = new ResultPolygon(id, 0);
+						polyMap.put(id, re);
 						createContour(x, y, id);
 					}
+					//countPixelofArea(x, y);
 				}
 			}
+			//System.out.println();
 		}
 	}
 	
 	
 		
 	public void createContour(int x, int y, int id){
-		//int currentX  = x;
-		setCurrentX(x);
-		setCurrentY(y);
-		//int currentY = y;
+		System.out.println("Enter create Contour");
+		int currentX = x;					
+		int currentY =y;
 		int latestAddedX = x;
 		int latestAddedY = y;
+		int direction =1;
 		int countRotation = 0;
+		
+		
 		do{
-			switch(direction){
-			case 1: directionNorth(currentX, currentY, latestAddedX, latestAddedY);
+			switch(direction){		//north
+			case 1: currentY-=1;
+				break;				//east
+			case 2: currentX+=1;
 				break;
-			case 2: directionEast(currentX, currentY, latestAddedX, latestAddedY);
+			case 3: currentY+=1;				
 				break;
-			case 3: directionSouth(currentX, currentY, latestAddedX, latestAddedY);
-				break;
-			case 4: directionWest(currentX, currentY, latestAddedX, latestAddedY);
+			case 4: currentX-=1;
 				break;
 			}
-			int pixel = getResizedArrayWithLabels()[(currentY)*getResizedArrayWidth()+(currentX)];
+			int pixel = getResizedArrayWithLabels()[currentY*getResizedArrayWidth()+currentX];
 			if(pixel!=0){
-				if(getCurrentX()==latestAddedX&&getCurrentY()==latestAddedY){
+				if(currentX==latestAddedX&&currentY==latestAddedY){
 				}else{
 					int pixWhite = 0xffffffff;
-					contourArray[getCurrentY()*getResizedArrayWidth()+getCurrentX()] = (0xFF << 24) | (pixWhite << 16) | (pixWhite << 8) | pixWhite;
-					latestAddedX = getCurrentX();
-					latestAddedY = getCurrentY();
-					//polyMap.get(id).addPoint(getCurrentX(), getCurrentY());
+					contourArray[currentY*getResizedArrayWidth()+currentX] = (0xFF << 24) | (pixWhite << 16) | (pixWhite << 8) | pixWhite;
+					latestAddedX = currentX;
+					latestAddedY = currentY;
+					polyMap.get(id).addPoint(currentX, currentY);
+					
 				}
+				direction-=1;
 				countRotation=0;
 				
 			}else{
-				setDirection(getDirection()+1);
+				direction+=1;
 				countRotation+=1;
 			}
 			if(countRotation==4){
-				setDirection(getDirection()-2);
+			
+				direction-=2;
+				countRotation=0;
 			}
-			if(getDirection()==5)
-				setDirection(1);
-			if(getDirection()==0)
-				setDirection(4);
+			if(direction==5)
+				direction=1;
+			if(direction==0)
+				direction=4;
 				
-		}while((x!=currentX)&&(y!=currentY));
+			
+		}while(currentX!=x||currentY!=y);
+		System.out.println("Das ist mapID: " + id + "   " + polyMap.get(id).npoints);
+	}
+	
+	
+
+	private void countPixelofArea(int x, int y){
+		
+		Iterator hmIterator = polyMap.entrySet().iterator(); 
+		  
+        while (hmIterator.hasNext()) { 
+            Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+            int id = (int)mapElement.getKey();
+            ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
+            
+            if(rPoly.contains(x, y)){
+            	
+            }
+            
+            //System.out.println(mapElement.getKey() + " : " + marks);
+            
+        } 
+        
+	}
+	
+	
+	//Hier werden die Pixel von jedem Label gezaehlt
+	private void countPixelFromEachLabel(){
+		for(int y = 0;y<getImgHeight();y++){
+			for(int x = 0;x<getImgWidth();x++){
+				int pixValue= label[y][x];
+				if(labelAreaMap.containsKey(pixValue)){
+					Iterator hmIterator = labelAreaMap.entrySet().iterator(); 
+					while (hmIterator.hasNext()) { 
+						Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+						int id = (int)mapElement.getKey();
+						if((int)mapElement.getKey()==pixValue){
+							int w = (int)mapElement.getValue()+1;
+						}
+					}
+				}else{
+					labelAreaMap.put(pixValue, 1);
+				}
+			}
+		}
 	}
 		
+
+		
 	
-	//checking All Pixels in Direction Nord
-	private void directionNorth(int currentX, int currentY, int latestAddedX, int latestAddedY){
-		if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
-			setCurrentX(currentX-=1);
-			setCurrentY(currentY-=1);
-			setDirection(getDirection()-1);
-		}
-		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX)]!=0){
-			setCurrentY(currentY-=1);
-		}
-		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
-			setCurrentX(currentX+=1);
-			setCurrentY(currentY-=1);
-			setDirection(getDirection()+1);
-		}else{}
-	}
+	
 
-	//checking All Pixels in Direction East
-	private void directionEast(int currentX, int currentY, int latestAddedX, int latestAddedY){
-		if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX+1)]!=0){
-			setCurrentX(currentX+=1);
-			setCurrentY(currentY-=1);
-			setDirection(getDirection()-1);
-			
-		}
-		else if(getResizedArrayWithLabels()[(currentY)*getResizedArrayWidth()+(currentX+1)]!=0){
-			setCurrentX(currentX+=1);
-		}
-		else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
-			setCurrentX(currentX+=1);
-			setCurrentY(currentY+=1);
-			setDirection(getDirection()+1);
-		}else{}
-	}
-
-	//checking All Pixels in Direction South
-	private void directionSouth(int currentX, int currentY, int latestAddedX, int latestAddedY){
-		if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX+1)]!=0){
-			setCurrentX(currentX+=1);
-			setCurrentY(currentY+=1);
-			setDirection(getDirection()-1);
-		}
-		else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX)]!=0){
-			setCurrentY(currentY+=1);
-		}
-		else if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX-1)]!=0){
-			setCurrentX(currentX-=1);
-			setCurrentY(currentY+=1);
-			setDirection(getDirection()+1);
-		}else{}
-	}
-
-	//checking All Pixels in Direction West
-	private void directionWest(int currentX, int currentY, int latestAddedX, int latestAddedY){
-		if(getResizedArrayWithLabels()[(currentY+1)*getResizedArrayWidth()+(currentX-1)]!=0){
-			setCurrentX(currentX-=1);
-			setCurrentY(currentY+=1);
-			setDirection(getDirection()-1);
-		}
-		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
-			setCurrentX(currentX-=1);
-		}
-		else if(getResizedArrayWithLabels()[(currentY-1)*getResizedArrayWidth()+(currentX-1)]!=0){
-			setCurrentX(currentX-=1);
-			setCurrentY(currentY-=1);
-			setDirection(getDirection()+1);
-		}else{}
-	}
+	
 	
 	
 	
 	public void labelToArray(){
 		for(int y = 0;y<getImgHeight();y++){
 			for(int x = 0;x<getImgWidth();x++){
-				getResizedArrayWithLabels()[(y+2)*getImgWidth()+(x+2)] = getLabel()[y][x];
+				getResizedArrayWithLabels()[(y+2)*getResizedArrayWidth()+(x+2)] = getLabel()[y][x];
 			}
 		}
 	}
