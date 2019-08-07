@@ -96,6 +96,7 @@ public class MyPluginCommand implements PathCommand {
 	private Button btn4;
 	private Button btnOk;
 	private Button btnCancel;
+	private int [][]label;
 	
 
 	private ComboBox<String> comboBox;
@@ -143,6 +144,7 @@ public class MyPluginCommand implements PathCommand {
 		
 		img = qupath.getViewer().getThumbnail(); // create Image
 		argb = new int[getImg().getHeight() * getImg().getWidth()];
+		this.label = new int[getImg().getHeight()][getImg().getWidth()];
 		updatedArray = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
 
@@ -167,11 +169,10 @@ public class MyPluginCommand implements PathCommand {
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
 			
-			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), getArgb());
+			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), getArgb(), getLabel());
 			tw.createFirstStep();
 			tw.createSecondStep();
-			tw.labelToArray();
-			tw.searchContourStart();
+			
 			
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			//tw.pavlidisAlgo();
@@ -224,6 +225,20 @@ public class MyPluginCommand implements PathCommand {
 	}
 		
 		
+	public int[][] getLabel() {
+		return label;
+	}
+
+
+
+
+	public void setLabel(int[][] label) {
+		this.label = label;
+	}
+
+
+
+
 	private void drawImage(int height, int width, int[] rgb) {
 		qupath.getViewer().getThumbnail().setRGB(0, 0, width, height, rgb, 0, width);
 		qupath.getViewer().repaintEntireImage();
@@ -617,9 +632,6 @@ public class MyPluginCommand implements PathCommand {
 
 	
 	
-	
-	
-
 	public BufferedImage getImg() {
 		return img;
 	}
