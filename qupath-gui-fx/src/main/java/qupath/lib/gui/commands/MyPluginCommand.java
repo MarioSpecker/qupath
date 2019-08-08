@@ -148,6 +148,9 @@ public class MyPluginCommand implements PathCommand {
 		this.label = new int[getImg().getHeight()][getImg().getWidth()];
 		updatedArray = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
+		
+		//Versuch zum Histogramm
+		Histogram histo = new Histogram(getArgb());
 
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
@@ -198,11 +201,13 @@ public class MyPluginCommand implements PathCommand {
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GAUSS":
+			//Um das Bild zu gläten
 			Filter gauss = new GaussFilter();
 			gauss.filterOperation(getImg().getWidth(), getImg().getHeight(), getHalfKernelSize(), getGridSize(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		case "EDGE":
+			//
 			Filter laPlace = new LaPlaceFilter();
 			laPlace.filterOperation(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getGridSize(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
@@ -214,7 +219,7 @@ public class MyPluginCommand implements PathCommand {
 			c.twoPass();
 			c.pavlidisAlgo();
 			if(c.compareSizeOfArea()){
-				drawImage(getImg().getWidth(), getImg().getHeight(),c.getResultContour());
+				drawImage(getImg().getHeight(), getImg().getWidth(),c.getResultContour());
 			}
 			break;
 
@@ -461,6 +466,7 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createCenter(){
+		
 		Pane b = makeGrid(getGridSize());
 		getRoot().setAlignment(b, Pos.CENTER);
 		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
@@ -620,6 +626,27 @@ public class MyPluginCommand implements PathCommand {
 		hBox = new HBox();
 		
 		
+		
+	}
+	
+	
+	class Histogram{
+		private long alpha[];
+		private long red[];
+		private long green[];
+		private long blue[];
+		private int [] argb;
+		
+		public Histogram(int[] argb){
+			alpha = red = green = blue =  new long[256];
+			this.argb = argb;
+		}
+		
+		
+		
+		
+		
+	
 		
 	}
 

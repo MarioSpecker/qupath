@@ -28,7 +28,7 @@ public class Contour {
 	}
 	
 	
-	
+	//geht jedes einzelene Pixel von dem Label durch und zaehlt so den Flächeninhalt in Pixel
 	private void countPixelFromEachLabel(){
 		for(int y = 0;y<getImgHeight();y++){
 			for(int x = 0;x<getImgWidth();x++){
@@ -52,7 +52,8 @@ public class Contour {
 	
 
 
-	
+	//Vergleicht die beiden Hashmaps und deren ihr Flächeninhalt miteinander und gibt bei einem Unterschied ein falsch zurueck
+	//ansonsten true.....
 	public boolean compareSizeOfArea() {
 		Iterator it = labelAreaMap.entrySet().iterator();
 	    while (it.hasNext()) {
@@ -67,13 +68,14 @@ public class Contour {
 	}
 	
 	
-	
+	//Algo fuer die Darstellung der Kontur
 	public void pavlidisAlgo(){
 		bTA.labelToArray();
 		bTA.searchContourStart(getPolyMap());
 		bTA.decreaseArray();
 	}
 	
+	//Algo um die die einzelnen Objekte zu unterscheiden bzw gibt jedem Objekt eine eigenes Label(ID)
 	public void twoPass(){
 		twoPassAlgo.createFirstStep();
 		twoPassAlgo.createSecondStep();
