@@ -2,6 +2,7 @@ package qupath.lib.gui.commands;
 
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.Mario.BinaryImage;
+import qupath.lib.gui.commands.Mario.Contour;
 import qupath.lib.gui.commands.Mario.Dilatation;
 import qupath.lib.gui.commands.Mario.Erosion;
 import qupath.lib.gui.commands.Mario.TwoPassAlgo;
@@ -168,13 +169,7 @@ public class MyPluginCommand implements PathCommand {
 			setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
-			
-			TwoPassAlgo tw = new TwoPassAlgo(getImg().getWidth(), getImg().getHeight(), getArgb(), getLabel());
-			tw.createFirstStep();
-			tw.createSecondStep();
-			
-			
-			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
+			//drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			//tw.pavlidisAlgo();
 			//drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
@@ -215,9 +210,14 @@ public class MyPluginCommand implements PathCommand {
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		
+		case "CONTOUR":
+			Contour c = new Contour(getImg().getWidth(), getImg().getHeight(), getArgb());
+			c.twoPass();
+			c.pavlidisAlgo();
+			c.compareSizeOfArea();
+			break;
+
 		case "NOOPERATION":
-			
-	
 			break;
 		
 		}
@@ -362,10 +362,11 @@ public class MyPluginCommand implements PathCommand {
 		getComboBox().getItems().add("Gauss"); 
 		getComboBox().getItems().add("Dilatation"); 
 		getComboBox().getItems().add("Erosion"); 
+		getComboBox().getItems().add("Contour");
 		getComboBox().getSelectionModel().select(0);
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
-
+				//Bei Auswahl eines Items aus der ComboBox 
 				selectOperation(selected);
 			}    
 		});
@@ -380,12 +381,10 @@ public class MyPluginCommand implements PathCommand {
 	                	   setSizeBorder(1);
 	                	   cleanGrid();
 	                	   fillGridWithText(button.getText(), getChoiceOperation());
-	                	   
 	                   }else{
 	                	   setSizeBorder(2);
 	                	   cleanGrid();
 	                	   fillGridWithText(button.getText(),  getChoiceOperation());
-	
 	                   }
 	               }
 	           }
@@ -427,10 +426,15 @@ public class MyPluginCommand implements PathCommand {
 			updateViewForNonSelectableOperations();
 			setChoiceOperation("GRAYSCALE");
 		}
+		else if(selected.contains("Contour")){
+			updateViewForNonSelectableOperations();
+			setChoiceOperation("CONTOUR");
+		}
 		else if(selected.contains("Select")){
 			updateViewEdge();
 			setChoiceOperation("NOOPERATION");
 		}
+		
 	}
 	
 	//GUI update wenn Dilatation bzw Erosion ausgewaehlt wird

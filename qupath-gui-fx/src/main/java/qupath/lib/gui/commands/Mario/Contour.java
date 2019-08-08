@@ -13,19 +13,19 @@ public class Contour {
 	private int[] resultContour;
 	private int imgWidth;
 	private int imgHeight;
-	
+	private BoundaryTracingAlgo bTA;
+	private TwoPassAlgo twoPassAlgo;
 	
 	public Contour(int imgWidth, int imgHeight, int[] argb){
 		this.resultContour = new int[imgWidth*imgWidth];
 		this.label= new int[imgHeight][imgWidth];
-		BoundaryTracingAlgo bTA = new BoundaryTracingAlgo(imgWidth, imgHeight, argb, label, polyMap, labelAreaMap, resultContour);
-		TwoPassAlgo twoPassAlgo = new TwoPassAlgo(imgWidth, imgHeight, argb, label);
+		this.bTA = new BoundaryTracingAlgo(imgWidth, imgHeight, argb, label, labelAreaMap, resultContour);
+		this.twoPassAlgo= new TwoPassAlgo(imgWidth, imgHeight, argb, label);
 		this.polyMap = new HashMap<>();
 		this.labelAreaMap = new HashMap<>();
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
 	}
-	
 	
 	
 	
@@ -47,6 +47,53 @@ public class Contour {
 				}
 			}
 		}
+	}
+	
+	
+//	PUBLIC VOID COMPAREAREASIZE(){
+//		ITERATOR HMITERATOR = GETPOLYMAP().ENTRYSET().ITERATOR(); 
+//		WHILE (HMITERATOR.HASNEXT()) { 
+//			MAP.ENTRY MAPELEMENT = (MAP.ENTRY)HMITERATOR.NEXT(); 
+//			INT ID = (INT)MAPELEMENT.GETKEY();
+//			RESULTPOLYGON RPOLY = (RESULTPOLYGON)MAPELEMENT.GETVALUE();
+//			INT NUMBER = RPOLY.NPOINTS;
+//			SYSTEM.OUT.PRINTLN("ID= " +ID + "  ANZAHL= "+ NUMBER);
+//		}
+//		ITERATOR HITERATOR = GETLABELAREAMAP().ENTRYSET().ITERATOR(); 
+//		WHILE (HMITERATOR.HASNEXT()) { 
+//			MAP.ENTRY MAPELEMENT = (MAP.ENTRY)HITERATOR.NEXT(); 
+//			INT ID = (INT)MAPELEMENT.GETKEY();
+//			INT NUMBER = (INT)MAPELEMENT.GETVALUE();
+//			
+//			SYSTEM.OUT.PRINTLN("ID= " +ID + "  ANZAHL= "+ NUMBER);
+//		}
+//		
+//	}
+	
+	public boolean compareSizeOfArea() {
+		Iterator it = labelAreaMap.entrySet().iterator();
+	    while (it.hasNext()) {
+	    	Map.Entry pair = (Map.Entry)it.next();
+	    	int id = (int)pair.getKey();
+	    	if(labelAreaMap.get(id)!=polyMap.get(id).sizeOfPixel){
+	    		System.out.println("false");
+	    		return false;
+	    	}
+	    }
+	    return true;
+	}
+	
+	
+	
+	public void pavlidisAlgo(){
+		bTA.labelToArray();
+		bTA.searchContourStart(getPolyMap());
+		bTA.decreaseArray();
+	}
+	
+	public void twoPass(){
+		twoPassAlgo.createFirstStep();
+		twoPassAlgo.createSecondStep();
 	}
 	
 	

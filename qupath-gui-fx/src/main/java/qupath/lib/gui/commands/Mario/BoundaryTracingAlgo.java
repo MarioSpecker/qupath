@@ -1,6 +1,6 @@
 package qupath.lib.gui.commands.Mario;
 
-import java.awt.image.BufferedImage;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -18,10 +18,10 @@ public class BoundaryTracingAlgo {
 	private static final int BORDERSIZE = 4;
 	private int[] resultContour;
 	private HashMap<Integer,Integer> labelAreaMap;
-	private HashMap<Integer,ResultPolygon> polyMap;
 	
 	
-	public BoundaryTracingAlgo(int imgWidth, int imgHeight, int[]argb, int[][] label, HashMap<Integer,ResultPolygon> polyMap, HashMap<Integer,Integer> labelAreaMap, int[] resultContour){
+	
+	public BoundaryTracingAlgo(int imgWidth, int imgHeight, int[]argb, int[][] label, HashMap<Integer,Integer> labelAreaMap, int[] resultContour){
 		
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
@@ -29,7 +29,6 @@ public class BoundaryTracingAlgo {
 		this.setLabel(label);
 		this.resultContour = resultContour;
 		this.setLabelAreaMap(labelAreaMap);
-		this.setPolyMap(polyMap);
 		this.resizedArrayWithLabels = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
 		this.contourArray = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
 		this.resizedArrayWidth = imgWidth+BORDERSIZE;
@@ -37,31 +36,29 @@ public class BoundaryTracingAlgo {
 	}
 
 
-	public void searchContourStart(){
+	public void searchContourStart(HashMap<Integer,ResultPolygon> polyMap ){
 		for(int y = 0;y<getResizedArrayHeight();y++){
 			for(int x = 0;x<getResizedArrayWidth();x++){
 				//System.out.print(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]);
 				if(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x]!=0){
 				
-					if(getPolyMap().containsKey(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x])){					
+					if(polyMap.containsKey(getResizedArrayWithLabels()[y*getResizedArrayWidth()+x])){					
 					}
 					else{
 						int id = getResizedArrayWithLabels()[y*getResizedArrayWidth()+x];
 						ResultPolygon re = new ResultPolygon(id, 0);
-						getPolyMap().put(id, re);
-						createContour(x, y, id);
+						polyMap.put(id, re);
+						createContour(x, y, id, polyMap);
 					}
-					//countPixelofArea(x, y);
+					countPixelofArea(x, y, polyMap);
 				}
 			}
-			//System.out.println();
 		}
 	}
 	
 	
 		
-	public void createContour(int x, int y, int id){
-		System.out.println("Enter create Contour");
+	public void createContour(int x, int y, int id, HashMap<Integer,ResultPolygon> polyMap){
 		int currentX = x;					
 		int currentY =y;
 		int latestAddedX = x;
@@ -87,7 +84,7 @@ public class BoundaryTracingAlgo {
 					contourArray[currentY*getResizedArrayWidth()+currentX] = (0xFF << 24) | (pixWhite << 16) | (pixWhite << 8) | pixWhite;
 					latestAddedX = currentX;
 					latestAddedY = currentY;
-					getPolyMap().get(id).addPoint(currentX, currentY);
+					polyMap.get(id).addPoint(currentX, currentY);
 					
 				}
 				direction-=1;
@@ -108,45 +105,33 @@ public class BoundaryTracingAlgo {
 				
 			
 		}while(currentX!=x||currentY!=y);
-		System.out.println("Das ist mapID: " + id + "   " + getPolyMap().get(id).npoints);
 	}
 	
 	
 
-	private void countPixelofArea(int x, int y){
+	private boolean countPixelofArea(int x, int y, HashMap<Integer,ResultPolygon> polyMap){
 
-		Iterator hmIterator = getPolyMap().entrySet().iterator(); 
+		Iterator hmIterator = polyMap.entrySet().iterator(); 
 		while (hmIterator.hasNext()) { 
 			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
 			int id = (int)mapElement.getKey();
 			ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
-
 			if(rPoly.contains(x, y)){
-
+				rPoly.setSizeOfPixel(rPoly.getSizeOfPixel()+1);
+				return true;
 			}
-		} 
-	}
-	
-	//Hier werden die Pixel von jedem Label gezaehlt 
-	private void countPixelFromEachLabel(){
-		for(int y = 0;y<getImgHeight();y++){
-			for(int x = 0;x<getImgWidth();x++){
-				int pixValue= getLabel()[y][x];
-				if(getLabelAreaMap().containsKey(pixValue)){
-					Iterator hmIterator = getLabelAreaMap().entrySet().iterator(); 
-					while (hmIterator.hasNext()) { 
-						Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
-						int id = (int)mapElement.getKey();
-						if((int)mapElement.getKey()==pixValue){
-							int w = (int)mapElement.getValue()+1;
-						}
-					}
-				}else{
-					getLabelAreaMap().put(pixValue, 1);
+			for(int i=0; i<rPoly.npoints;i++){
+				if((rPoly.xpoints[i]==x)&&(rPoly.ypoints[i]==y)){
+					rPoly.setSizeOfPixel(rPoly.getSizeOfPixel()+1);
+					return true;
 				}
 			}
-		}
+		} 
+		return false;
 	}
+	
+	
+	
 			
 
 		//Hier werden die Werte von einer 2er Matrix (label) in einem vergrösserten(2 Pixel Rand an jeder seite) 1d Array gespeichert	
@@ -159,10 +144,10 @@ public class BoundaryTracingAlgo {
 		}
 		
 		
-		private void decreaseArray(){
+		public void decreaseArray(){
 			for(int y = 0;y<getImgHeight();y++){
 				for(int x = 0;x<getImgWidth();x++){
-					getResultContour()[y*getImgWidth()+x] =  getContourArray()[(y+2)*getImgWidth()+(x+2)];
+					getResultContour()[y*getImgWidth()+x] =  getContourArray()[(y+2)*getResizedArrayWidth()+(x+2)];
 				}
 			}
 		}
@@ -275,14 +260,7 @@ public class BoundaryTracingAlgo {
 		}
 
 
-		public HashMap<Integer,ResultPolygon> getPolyMap() {
-			return polyMap;
-		}
-
-
-		public void setPolyMap(HashMap<Integer,ResultPolygon> polyMap) {
-			this.polyMap = polyMap;
-		}
+		
 
 
 		public int[][] getLabel() {
