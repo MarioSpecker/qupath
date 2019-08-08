@@ -14,7 +14,8 @@ import qupath.lib.gui.commands.Mario.LaPlaceFilter;
 import qupath.lib.gui.commands.Mario.interfa.MorphOperations;
 import qupath.lib.gui.commands.interfaces.PathCommand;
 import qupath.lib.gui.helpers.DisplayHelpers;
-
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -116,6 +117,10 @@ public class MyPluginCommand implements PathCommand {
 	private static String[][] gaussMatrix5x5;
 	private String choiceOperation;
 	private int sizeBorder;
+	private long alpha[];
+	private long red[];
+	private long green[];
+	private long blue[];
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -130,6 +135,7 @@ public class MyPluginCommand implements PathCommand {
 		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"7","26","41","26","7"},{"4","16","26","16","4"},{"1","4","7","4","1"}};
 		this.choiceOperation  = "NOOPERATION";
 		this.sizeBorder = 1;
+		alpha = red = green = blue =  new long[256];
 		
 		
 	}
@@ -150,7 +156,7 @@ public class MyPluginCommand implements PathCommand {
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
 		
 		//Versuch zum Histogramm
-		Histogram histo = new Histogram(getArgb());
+		
 
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
@@ -467,7 +473,7 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void createCenter(){
 		
-		Pane b = makeGrid(getGridSize());
+		Pane b = //makeGrid(getGridSize());
 		getRoot().setAlignment(b, Pos.CENTER);
 		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
 		getRoot().setCenter(b);
@@ -630,16 +636,47 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	class Histogram{
-		private long alpha[];
-		private long red[];
-		private long green[];
-		private long blue[];
-		private int [] argb;
+	
 		
-		public Histogram(int[] argb){
-			alpha = red = green = blue =  new long[256];
-			this.argb = argb;
+		
+		
+		
+		
+		
+		private void fillRGBWithValues(){
+			for(int y =0; y< getImg().getHeight(); y++){
+				for(int x=0;x<getImg().getWidth(); x++){
+					int pos = y*getImg().getWidth()+x;
+					int r = argb[pos]>>16&0xff;
+					int g = argb[pos]>>8&0xff;
+					int b = argb[pos]&0xff;
+					red[r]++;
+					green[g]++;
+					blue[b]++;
+					
+				}
+			}
+			
+		}
+		
+		public Pane drawHistogram(){
+			Pane pane = new Pane();
+			
+			XYChart.Series seriesRed= new XYChart.Series();
+	        seriesRed.setName("Red");
+	        XYChart.Series seriesGreen= new XYChart.Series();
+	        seriesGreen.setName("Green");
+	        XYChart.Series seriesBlue= new XYChart.Series();
+	        seriesBlue.setName("Blue");
+	        
+	        for(int i=0; i<red.length;i++){
+	        	seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
+	        	seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
+	        	seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
+	        }
+			
+			return pane;
+			
 		}
 		
 		
