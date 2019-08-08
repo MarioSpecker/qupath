@@ -169,11 +169,10 @@ public class MyPluginCommand implements PathCommand {
 			setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
-			//drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
-			//tw.pavlidisAlgo();
-			//drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
+			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "GRAYSCALE":
+			//Hier wird aus einem Farbbild ein Graustufenbild erzeugt
 			Image greyscale = new GreyscaleImage();
 			greyscale.convertImage(getImg().getWidth(), getImg().getHeight(), getArgb(), 0);
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
@@ -187,7 +186,6 @@ public class MyPluginCommand implements PathCommand {
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case "EROSION":
-		
 			//Erosion erhät man wenn man auf ein Binärbild eine inversion durchführt, darauf dann eine Dilatation und
 			//zum Schluss nochmal eine Inversion
 			invertImage(img.getWidth(), img.getHeight(), getArgb());
@@ -211,10 +209,13 @@ public class MyPluginCommand implements PathCommand {
 			break;
 		
 		case "CONTOUR":
+			//Diese Contourverfolgung funktioniert nur bei Anwendung auf ein Binärbild
 			Contour c = new Contour(getImg().getWidth(), getImg().getHeight(), getArgb());
 			c.twoPass();
 			c.pavlidisAlgo();
-			c.compareSizeOfArea();
+			if(c.compareSizeOfArea()){
+				drawImage(getImg().getWidth(), getImg().getHeight(),c.getResultContour());
+			}
 			break;
 
 		case "NOOPERATION":
@@ -225,19 +226,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 		
 		
-	public int[][] getLabel() {
-		return label;
-	}
-
-
-
-
-	public void setLabel(int[][] label) {
-		this.label = label;
-	}
-
-
-
+	
 
 	private void drawImage(int height, int width, int[] rgb) {
 		qupath.getViewer().getThumbnail().setRGB(0, 0, width, height, rgb, 0, width);
@@ -309,17 +298,17 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 
-	public void printKernel(boolean[][] kernel) {
-		for (boolean[] xS : kernel) {
-			for (boolean v : xS) {
-
-				System.out.println(v);
-			}
-			System.out.println();
-		}
-
-	}
-	
+//	public void printKernel(boolean[][] kernel) {
+//		for (boolean[] xS : kernel) {
+//			for (boolean v : xS) {
+//
+//				System.out.println(v);
+//			}
+//			System.out.println();
+//		}
+//
+//	}
+//	
 	
 	
 		
@@ -927,6 +916,14 @@ public class MyPluginCommand implements PathCommand {
 
 	public void setBtnCancel(Button btnCancel) {
 		this.btnCancel = btnCancel;
+	}
+	
+	public int[][] getLabel() {
+		return label;
+	}
+
+	public void setLabel(int[][] label) {
+		this.label = label;
 	}
 	
 }

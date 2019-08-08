@@ -17,7 +17,7 @@ public class Contour {
 	private TwoPassAlgo twoPassAlgo;
 	
 	public Contour(int imgWidth, int imgHeight, int[] argb){
-		this.resultContour = new int[imgWidth*imgWidth];
+		this.resultContour = new int[imgWidth*imgHeight];
 		this.label= new int[imgHeight][imgWidth];
 		this.bTA = new BoundaryTracingAlgo(imgWidth, imgHeight, argb, label, labelAreaMap, resultContour);
 		this.twoPassAlgo= new TwoPassAlgo(imgWidth, imgHeight, argb, label);
@@ -50,25 +50,8 @@ public class Contour {
 	}
 	
 	
-//	PUBLIC VOID COMPAREAREASIZE(){
-//		ITERATOR HMITERATOR = GETPOLYMAP().ENTRYSET().ITERATOR(); 
-//		WHILE (HMITERATOR.HASNEXT()) { 
-//			MAP.ENTRY MAPELEMENT = (MAP.ENTRY)HMITERATOR.NEXT(); 
-//			INT ID = (INT)MAPELEMENT.GETKEY();
-//			RESULTPOLYGON RPOLY = (RESULTPOLYGON)MAPELEMENT.GETVALUE();
-//			INT NUMBER = RPOLY.NPOINTS;
-//			SYSTEM.OUT.PRINTLN("ID= " +ID + "  ANZAHL= "+ NUMBER);
-//		}
-//		ITERATOR HITERATOR = GETLABELAREAMAP().ENTRYSET().ITERATOR(); 
-//		WHILE (HMITERATOR.HASNEXT()) { 
-//			MAP.ENTRY MAPELEMENT = (MAP.ENTRY)HITERATOR.NEXT(); 
-//			INT ID = (INT)MAPELEMENT.GETKEY();
-//			INT NUMBER = (INT)MAPELEMENT.GETVALUE();
-//			
-//			SYSTEM.OUT.PRINTLN("ID= " +ID + "  ANZAHL= "+ NUMBER);
-//		}
-//		
-//	}
+
+
 	
 	public boolean compareSizeOfArea() {
 		Iterator it = labelAreaMap.entrySet().iterator();
