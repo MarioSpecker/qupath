@@ -1,5 +1,6 @@
 package qupath.lib.gui.commands;
 
+
 import qupath.lib.gui.QuPathGUI;
 import qupath.lib.gui.commands.Mario.BinaryImage;
 import qupath.lib.gui.commands.Mario.Contour;
@@ -16,10 +17,16 @@ import qupath.lib.gui.commands.interfaces.PathCommand;
 import qupath.lib.gui.helpers.DisplayHelpers;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
@@ -110,7 +117,7 @@ public class MyPluginCommand implements PathCommand {
 	private BufferedImage img;
 	private int threshold;
 	private static Text[][] textForGrid;
-	private static int widthOfGrid;
+	private static double widthOfGrid;
 	private static String[][] lPF3Matrix;
 	private static String[][] lPF5Matrix;
 	private static String[][] gaussMatrix3x3;
@@ -135,7 +142,10 @@ public class MyPluginCommand implements PathCommand {
 		this.gaussMatrix5x5 = new String[][]{{"1","4","7","4","1"},{"4","16","26","16","4"},{"7","26","41","26","7"},{"4","16","26","16","4"},{"1","4","7","4","1"}};
 		this.choiceOperation  = "NOOPERATION";
 		this.sizeBorder = 1;
-		alpha = red = green = blue =  new long[256];
+		alpha = new long[256];
+		red = new long[256];
+		green = new long[256];
+		blue =  new long[256];
 		
 		
 	}
@@ -336,9 +346,13 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	protected Stage createDialog() {
 		Stage dialog = new Stage();
+		
 		dialog.initOwner(qupath.getStage());
 		dialog.setTitle("My Plugin Dialog");
-		dialog.setScene(new Scene(addBorderPane(), 500, 350));
+		Scene scene = new Scene(addBorderPane());		
+		scene.getStylesheets().add("css/StyleMario.css");
+		dialog.setScene(scene);
+		
 		return dialog;
 	}
 
@@ -396,6 +410,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxRightBorder().setMargin(getradioBtn5(), new Insets(5,5,5,0));
 		getvBoxRightBorder().getChildren().addAll(getComboBox(),getradioBtn3(),getradioBtn5());
 		root.setRight(getvBoxRightBorder());
+		
 	}
 	
 	
@@ -445,7 +460,7 @@ public class MyPluginCommand implements PathCommand {
 		getradioBtn5().setDisable(true);
 		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
-		cleanGrid();
+		//cleanGrid();
 	}
 	
 	//GUI update wenn Graustufenbild, Binärbild oder GaussFilter angewendet wird
@@ -456,7 +471,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
-		cleanGrid();
+		//cleanGrid();
 	}
 	
 	@SuppressWarnings("restriction")
@@ -464,7 +479,8 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(false);
 		getradioBtn5().setDisable(false);
-		cleanGrid();
+		//cleanGrid();
+		
 	}
 	
 	
@@ -473,11 +489,16 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void createCenter(){
 		
-		Pane b = //makeGrid(getGridSize());
+		Pane b = makeGrid(getGridSize());
+		//Pane t = drawHistogram();
 		getRoot().setAlignment(b, Pos.CENTER);
 		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
 		getRoot().setCenter(b);
+		
 	}
+	
+	
+	
 	
 	
 	@SuppressWarnings("restriction")
@@ -536,26 +557,33 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	
-	
 	//Hier wird das Grid erstellt
 	@SuppressWarnings("restriction")
 	public static Pane makeGrid(int size) {
-		double width = getWidthOfGrid() / size;
+		
 		Pane pane = new Pane();
-		for (int i = 0; i < size; i++) {
-			for (int j = 0; j < size; j++) {
-				getTextForGrid()[i][j] = new Text();
-				getRec()[i][j] = new Rectangle();
-				getRec()[i][j].setX(i * width);
-				getRec()[i][j].setY(j * width);
-				getRec()[i][j].setWidth(width);
-				getRec()[i][j].setHeight(width);
-				getRec()[i][j].setFill(null);
-				getRec()[i][j].setStroke(Color.BLACK);
-				pane.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);
+		pane.widthProperty().addListener(e->{
+			double width = pane.getWidth() / size;
+			double height = pane.getHeight()/size;
+			System.out.println(getWidthOfGrid());
+			pane.getChildren().clear();
+			for (int i = 0; i < size; i++) {
+				for (int j = 0; j < size; j++) {
+					
+					getTextForGrid()[i][j] = new Text();
+					getRec()[i][j] = new Rectangle();
+					getRec()[i][j].setX(i * width);
+					getRec()[i][j].setY(j * height);
+					getRec()[i][j].setWidth(width);
+					getRec()[i][j].setHeight(height);
+					getRec()[i][j].setFill(null);
+					getRec()[i][j].setStroke(Color.BLACK);
+					pane.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);
+				}
 			}
-		}
+		});
+		
+		
 		return pane;
 	}
 	
@@ -576,34 +604,34 @@ public class MyPluginCommand implements PathCommand {
 	//Alle Operationen die Grid in der Gui mit Zahlen befüllen
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String nameMatrix, String nameOperation){
-		cleanGrid();
-		double width = getWidthOfGrid() / getGridSize();
-		for (int i = 0; i < getGridSize(); i++) {
-			for (int j = 0; j < getGridSize(); j++) {
-				getTextForGrid()[i][j].setX(i *width+17);
-				getTextForGrid()[i][j].setY(j*width+30);
-				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
-				if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("EDGE"))
-					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
-				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
-					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
-				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS")){
-					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
-				}
-					
-			}
-		}
+//		cleanGrid();
+//		double width = getWidthOfGrid() / getGridSize();
+//		for (int i = 0; i < getGridSize(); i++) {
+//			for (int j = 0; j < getGridSize(); j++) {
+//				getTextForGrid()[i][j].setX(i *width+17);
+//				getTextForGrid()[i][j].setY(j*width+30);
+//				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
+//				if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("EDGE"))
+//					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
+//				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
+//					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
+//				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS")){
+//					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
+//				}
+//					
+//			}
+//		}
 	}
 	
 	//Das Grid in der GUI wird gelöscht bzw alle Zahlen und Farben gelöscht
 	@SuppressWarnings("restriction")
 	private void cleanGrid(){
-		for (int i = 0; i < getGridSize(); i++) {
-			for (int j = 0; j < getGridSize(); j++) {
-				getRec()[i][j].setFill(Color.WHITE);
-				getTextForGrid()[i][j].setText("");
-			}
-		}
+//		for (int i = 0; i < getGridSize(); i++) {
+//			for (int j = 0; j < getGridSize(); j++) {
+//				getRec()[i][j].setFill(Color.WHITE);
+//				getTextForGrid()[i][j].setText("");
+//			}
+//		}
 	}
 	
 	//Wird beim Start des Plugins aufgerufen. Die Gui wird auf default gestellt
@@ -630,62 +658,64 @@ public class MyPluginCommand implements PathCommand {
 		vBoxLeftBorder = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
-		
-		
-		
 	}
-	
-	
-	
-		
-		
-		
-		
-		
-		
-		private void fillRGBWithValues(){
-			for(int y =0; y< getImg().getHeight(); y++){
-				for(int x=0;x<getImg().getWidth(); x++){
-					int pos = y*getImg().getWidth()+x;
-					int r = argb[pos]>>16&0xff;
-					int g = argb[pos]>>8&0xff;
-					int b = argb[pos]&0xff;
-					red[r]++;
-					green[g]++;
-					blue[b]++;
-					
-				}
+
+
+	private void fillRGBWithValues(){
+		for (int i = 0; i < 256; i++) {
+			alpha[i] = red[i] = green[i] = blue[i] = 0;
+		}
+		for(int y =0; y< getImg().getHeight(); y++){
+			for(int x=0;x<getImg().getWidth(); x++){
+				int pos = y*getImg().getWidth()+x;
+				int r = argb[pos]>>16&0xff;
+			int g = argb[pos]>>8&0xff;
+		int b = argb[pos]&0xff;
+		red[r] = red[r]+1;
+		green[g] = green[g]+1;
+		blue[b] = blue[b]+1;
+
 			}
-			
 		}
-		
-		public Pane drawHistogram(){
-			Pane pane = new Pane();
-			
-			XYChart.Series seriesRed= new XYChart.Series();
-	        seriesRed.setName("Red");
-	        XYChart.Series seriesGreen= new XYChart.Series();
-	        seriesGreen.setName("Green");
-	        XYChart.Series seriesBlue= new XYChart.Series();
-	        seriesBlue.setName("Blue");
-	        
-	        for(int i=0; i<red.length;i++){
-	        	seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
-	        	seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
-	        	seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
-	        }
-			
-			return pane;
-			
+
+	}
+
+	public Pane drawHistogram(){
+		fillRGBWithValues();
+		Pane pane = new Pane();
+		final CategoryAxis xAxis = new CategoryAxis();
+		final NumberAxis yAxis = new NumberAxis();
+		final LineChart<String, Number> chartHistogram
+		= new LineChart<>(xAxis, yAxis);
+		chartHistogram.getXAxis().setAutoRanging(true);
+		chartHistogram.getYAxis().setAutoRanging(true);
+		chartHistogram.setCreateSymbols(false);
+		XYChart.Series seriesRed= new XYChart.Series();
+		seriesRed.setName("Red");
+		XYChart.Series seriesGreen= new XYChart.Series();
+		seriesGreen.setName("Green");
+		XYChart.Series seriesBlue= new XYChart.Series();
+		seriesBlue.setName("Blue");
+
+		for(int i=0; i<256;i++){
+			seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
+			seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
+			seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
 		}
+
+		chartHistogram.getData().addAll(seriesRed, seriesGreen, seriesBlue);
+		pane.getChildren().add(chartHistogram);
+		return pane;
+
+	}
 		
 		
 		
 		
-		
+
 	
 		
-	}
+	
 
 	
 	
@@ -900,13 +930,13 @@ public class MyPluginCommand implements PathCommand {
 		MyPluginCommand.textForGrid = textForGrid;
 	}
 	
-	public static int getWidthOfGrid() {
+	public static double getWidthOfGrid() {
 		return widthOfGrid;
 	}
 
 
-	public void setWidthOfGrid(int widthOfGrid) {
-		this.widthOfGrid = widthOfGrid;
+	public void setWidthOfGrid(double d) {
+		this.widthOfGrid = d;
 	}
 
 
