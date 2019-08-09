@@ -342,11 +342,10 @@ public class MyPluginCommand implements PathCommand {
 	// ++++++++++++++++++++++++++++++++++++++Graphic....+++++++++++++++++++++++++++++++++++++++++
 
 	
-
+	//
 	@SuppressWarnings("restriction")
 	protected Stage createDialog() {
 		Stage dialog = new Stage();
-		
 		dialog.initOwner(qupath.getStage());
 		dialog.setTitle("My Plugin Dialog");
 		Scene scene = new Scene(addBorderPane());		
@@ -365,6 +364,7 @@ public class MyPluginCommand implements PathCommand {
 		createBottom();
 		return root;
 	}
+	
 	
 	
 	@SuppressWarnings("restriction")
@@ -488,7 +488,6 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createCenter(){
-		
 		Pane b = makeGrid(getGridSize());
 		//Pane t = drawHistogram();
 		getRoot().setAlignment(b, Pos.CENTER);
@@ -496,8 +495,6 @@ public class MyPluginCommand implements PathCommand {
 		getRoot().setCenter(b);
 		
 	}
-	
-	
 	
 	
 	
@@ -560,7 +557,6 @@ public class MyPluginCommand implements PathCommand {
 	//Hier wird das Grid erstellt
 	@SuppressWarnings("restriction")
 	public static Pane makeGrid(int size) {
-		
 		Pane pane = new Pane();
 		pane.widthProperty().addListener(e->{
 			double width = pane.getWidth() / size;
@@ -569,7 +565,6 @@ public class MyPluginCommand implements PathCommand {
 			pane.getChildren().clear();
 			for (int i = 0; i < size; i++) {
 				for (int j = 0; j < size; j++) {
-					
 					getTextForGrid()[i][j] = new Text();
 					getRec()[i][j] = new Rectangle();
 					getRec()[i][j].setX(i * width);
@@ -582,8 +577,6 @@ public class MyPluginCommand implements PathCommand {
 				}
 			}
 		});
-		
-		
 		return pane;
 	}
 	
@@ -659,7 +652,7 @@ public class MyPluginCommand implements PathCommand {
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
 	}
-
+	
 
 	private void fillRGBWithValues(){
 		for (int i = 0; i < 256; i++) {
@@ -669,15 +662,13 @@ public class MyPluginCommand implements PathCommand {
 			for(int x=0;x<getImg().getWidth(); x++){
 				int pos = y*getImg().getWidth()+x;
 				int r = argb[pos]>>16&0xff;
-			int g = argb[pos]>>8&0xff;
-		int b = argb[pos]&0xff;
-		red[r] = red[r]+1;
-		green[g] = green[g]+1;
-		blue[b] = blue[b]+1;
-
+				int g = argb[pos]>>8&0xff;
+				int b = argb[pos]&0xff;
+				red[r]++;
+				green[g]++;
+				blue[b]++;
 			}
 		}
-
 	}
 
 	public Pane drawHistogram(){
@@ -715,7 +706,7 @@ public class MyPluginCommand implements PathCommand {
 
 	
 		
-	
+	//++++++++++++++++++++++++++++++++++++++Getter // Setter+++++++++++++++++++++++++
 
 	
 	
