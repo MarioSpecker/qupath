@@ -32,7 +32,11 @@ import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
 
 import org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSet;
-
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -106,6 +110,8 @@ public class MyPluginCommand implements PathCommand {
 	private Button btnOk;
 	private Button btnCancel;
 	private int [][]label;
+	private Pane paneCenter;
+	
 	
 
 	private ComboBox<String> comboBox;
@@ -128,6 +134,9 @@ public class MyPluginCommand implements PathCommand {
 	private long red[];
 	private long green[];
 	private long blue[];
+	private boolean drawHist;
+	public BooleanProperty bearb;
+	
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -146,7 +155,8 @@ public class MyPluginCommand implements PathCommand {
 		red = new long[256];
 		green = new long[256];
 		blue =  new long[256];
-		
+		drawHist = true;
+		bearb = new SimpleBooleanProperty();
 		
 	}
 
@@ -393,12 +403,12 @@ public class MyPluginCommand implements PathCommand {
 	                   RadioButton button = (RadioButton) gettGroup().getSelectedToggle();
 	                   if(button.getText().contains("3er Matrix")){
 	                	   setSizeBorder(1);
-	                	   cleanGrid();
-	                	   fillGridWithText(button.getText(), getChoiceOperation());
+	                	//   cleanGrid();
+	                	   //fillGridWithText(button.getText(), getChoiceOperation());
 	                   }else{
 	                	   setSizeBorder(2);
-	                	   cleanGrid();
-	                	   fillGridWithText(button.getText(),  getChoiceOperation());
+	                	 //  cleanGrid();
+	                	   //fillGridWithText(button.getText(),  getChoiceOperation());
 	                   }
 	               }
 	           }
@@ -423,22 +433,30 @@ public class MyPluginCommand implements PathCommand {
 		else if(selected.contains("Gauss")){
 			updateViewForNonSelectableOperations();
 			setChoiceOperation("GAUSS");
-			fillGridWithText("5er Matrix", getChoiceOperation());
+			//fillGridWithText("5er Matrix", getChoiceOperation());
 			
 		}
 		else if(selected.contains("Dilatation")){
 			updateViewMorph();
+			drawHist=false;
+			createCenter();
 			setChoiceOperation("DILATATION");
 		}else if(selected.contains("Erosion")){
 			updateViewMorph();
+			drawHist=false;
+			
 			setChoiceOperation("EROSION");
 		}
 		else if(selected.contains("Binary")){
 			updateViewForNonSelectableOperations();
+			drawHist=false;
+			createCenter();
 			setChoiceOperation("BINARY");
 		}
 		else if(selected.contains("Grayscale")){
 			updateViewForNonSelectableOperations();
+			drawHist=true;
+			createCenter();
 			setChoiceOperation("GRAYSCALE");
 		}
 		else if(selected.contains("Contour")){
@@ -446,6 +464,7 @@ public class MyPluginCommand implements PathCommand {
 			setChoiceOperation("CONTOUR");
 		}
 		else if(selected.contains("Select")){
+			System.out.println("Select");
 			updateViewEdge();
 			setChoiceOperation("NOOPERATION");
 		}
@@ -488,11 +507,12 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createCenter(){
-		Pane b = makeGrid(getGridSize());
+		
+		paneCenter = makePaneCenter(getGridSize());
 		//Pane t = drawHistogram();
-		getRoot().setAlignment(b, Pos.CENTER);
-		getRoot().setMargin(b, new Insets(20, 20, 20, 20));
-		getRoot().setCenter(b);
+		getRoot().setAlignment(paneCenter, Pos.CENTER);
+		getRoot().setMargin(paneCenter, new Insets(20, 20, 20, 20));
+		getRoot().setCenter(paneCenter);
 		
 	}
 	
@@ -556,29 +576,60 @@ public class MyPluginCommand implements PathCommand {
 	
 	//Hier wird das Grid erstellt
 	@SuppressWarnings("restriction")
-	public static Pane makeGrid(int size) {
+	public Pane makePaneCenter(int size) {
 		Pane pane = new Pane();
-		pane.widthProperty().addListener(e->{
-			double width = pane.getWidth() / size;
-			double height = pane.getHeight()/size;
-			System.out.println(getWidthOfGrid());
-			pane.getChildren().clear();
-			for (int i = 0; i < size; i++) {
-				for (int j = 0; j < size; j++) {
-					getTextForGrid()[i][j] = new Text();
-					getRec()[i][j] = new Rectangle();
-					getRec()[i][j].setX(i * width);
-					getRec()[i][j].setY(j * height);
-					getRec()[i][j].setWidth(width);
-					getRec()[i][j].setHeight(height);
-					getRec()[i][j].setFill(null);
-					getRec()[i][j].setStroke(Color.BLACK);
-					pane.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);
-				}
-			}
-		});
+		if(drawHist){
+			fillRGBWithValues();
+			LineChart<String, Number> histo= drawHistogram();
+			pane.getChildren().add(histo);
+			System.out.println("Betritt draw Histo");
+		}
+		else{
+			bearb.addListener(new ChangeListener() {
+			    @Override
+			    public void changed(ObservableValue o, Object oldVal, Object newVal) {
+			        System.out.println(bearb);
+			    }
+			}); 
+		
+			
+			adjustGrid(getPaneCenter().getWidth(), 400, size, pane);
+			pane.widthProperty().addListener(e->{
+				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);
+				System.out.println("Betritt width property");
+				});
+			
+			
+		}
 		return pane;
 	}
+	
+	
+	
+	
+
+
+
+
+	private void adjustGrid(double widthPane, double heightPane, int size, Pane pane){
+		double width = widthPane / size;
+		System.out.println("Widthhhhhhhh" + width);
+		double height = heightPane/size;
+		pane.getChildren().clear();
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				getTextForGrid()[i][j] = new Text("i");
+				getRec()[i][j] = new Rectangle();
+				getRec()[i][j].setX(i * width);
+				getRec()[i][j].setY(j * height);
+				getRec()[i][j].setWidth(width);
+				getRec()[i][j].setHeight(height);
+				getRec()[i][j].setFill(null);
+				getRec()[i][j].setStroke(Color.BLACK);
+				System.out.println("Bin in adjustGrid");
+				pane.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);}}
+	}
+	
 	
 	//Bei Dilatation und Erosion wird der Kernel auf das Grid gezeichnet 
 	private void fillGridKernel(boolean[][] kernel) {
@@ -595,9 +646,9 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 	//Alle Operationen die Grid in der Gui mit Zahlen befüllen
-	@SuppressWarnings("restriction")
-	private void fillGridWithText(String nameMatrix, String nameOperation){
-//		cleanGrid();
+//	@SuppressWarnings("restriction")
+//	private void fillGridWithText(String nameMatrix, String nameOperation){
+//		//cleanGrid();
 //		double width = getWidthOfGrid() / getGridSize();
 //		for (int i = 0; i < getGridSize(); i++) {
 //			for (int j = 0; j < getGridSize(); j++) {
@@ -610,22 +661,21 @@ public class MyPluginCommand implements PathCommand {
 //					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
 //				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS")){
 //					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
-//				}
-//					
+//				}					
 //			}
 //		}
-	}
+//	}
 	
 	//Das Grid in der GUI wird gelöscht bzw alle Zahlen und Farben gelöscht
-	@SuppressWarnings("restriction")
-	private void cleanGrid(){
+	//@SuppressWarnings("restriction")
+//	private void cleanGrid(){
 //		for (int i = 0; i < getGridSize(); i++) {
 //			for (int j = 0; j < getGridSize(); j++) {
 //				getRec()[i][j].setFill(Color.WHITE);
 //				getTextForGrid()[i][j].setText("");
 //			}
 //		}
-	}
+//	}
 	
 	//Wird beim Start des Plugins aufgerufen. Die Gui wird auf default gestellt
 	@SuppressWarnings("restriction")
@@ -654,26 +704,8 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 
-	private void fillRGBWithValues(){
-		for (int i = 0; i < 256; i++) {
-			alpha[i] = red[i] = green[i] = blue[i] = 0;
-		}
-		for(int y =0; y< getImg().getHeight(); y++){
-			for(int x=0;x<getImg().getWidth(); x++){
-				int pos = y*getImg().getWidth()+x;
-				int r = argb[pos]>>16&0xff;
-				int g = argb[pos]>>8&0xff;
-				int b = argb[pos]&0xff;
-				red[r]++;
-				green[g]++;
-				blue[b]++;
-			}
-		}
-	}
 
-	public Pane drawHistogram(){
-		fillRGBWithValues();
-		Pane pane = new Pane();
+	public LineChart<String, Number> drawHistogram(){
 		final CategoryAxis xAxis = new CategoryAxis();
 		final NumberAxis yAxis = new NumberAxis();
 		final LineChart<String, Number> chartHistogram
@@ -695,9 +727,25 @@ public class MyPluginCommand implements PathCommand {
 		}
 
 		chartHistogram.getData().addAll(seriesRed, seriesGreen, seriesBlue);
-		pane.getChildren().add(chartHistogram);
-		return pane;
-
+		return chartHistogram;
+	}
+	
+	
+	private void fillRGBWithValues(){
+		for (int i = 0; i < 256; i++) {
+			alpha[i] = red[i] = green[i] = blue[i] = 0;
+		}
+		for(int y =0; y< getImg().getHeight(); y++){
+			for(int x=0;x<getImg().getWidth(); x++){
+				int pos = y*getImg().getWidth()+x;
+				int r = argb[pos]>>16&0xff;
+				int g = argb[pos]>>8&0xff;
+				int b = argb[pos]&0xff;
+				red[r]++;
+				green[g]++;
+				blue[b]++;
+			}
+		}
 	}
 		
 		
@@ -1009,6 +1057,25 @@ public class MyPluginCommand implements PathCommand {
 
 	public void setLabel(int[][] label) {
 		this.label = label;
+	}
+	
+	public Pane getPaneCenter() {
+		return paneCenter;
+	}
+
+	public void setPaneCenter(Pane paneCenter) {
+		this.paneCenter = paneCenter;
+	}
+	
+	public BooleanProperty getBearb() {
+		return bearb;
+	}
+
+
+
+
+	public void setBearb(BooleanProperty bearb) {
+		this.bearb = bearb;
 	}
 	
 }
