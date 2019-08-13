@@ -15,6 +15,7 @@ import qupath.lib.gui.commands.Mario.LaPlaceFilter;
 import qupath.lib.gui.commands.Mario.interfa.MorphOperations;
 import qupath.lib.gui.commands.interfaces.PathCommand;
 import qupath.lib.gui.helpers.DisplayHelpers;
+import qupath.lib.plugins.parameters.BooleanParameter;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 
@@ -32,6 +33,7 @@ import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
 
 import org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSet;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -156,7 +158,7 @@ public class MyPluginCommand implements PathCommand {
 		green = new long[256];
 		blue =  new long[256];
 		drawHist = true;
-		bearb = new SimpleBooleanProperty();
+		bearb = new SimpleBooleanProperty(false);
 		
 	}
 
@@ -328,6 +330,34 @@ public class MyPluginCommand implements PathCommand {
 			}
 		}
 	}
+	
+	private boolean isBinary(){
+		for(int y =0; y< getImg().getHeight(); y++){
+			for(int x=0;x<getImg().getWidth(); x++){
+				int pos = y*getImg().getWidth()+x;
+				int r = getArgb()[pos]>>16&0xff;
+				int g = getArgb()[pos]>>8&0xff;
+				int b = getArgb()[pos]&0xff;
+				if((r=g=b)!=(0)||(r=g=b)!=(255))
+					return false;
+			}
+		}
+		return true;
+	}
+	
+	private boolean isGreyscale(){
+		for(int y =0; y< getImg().getHeight(); y++){
+			for(int x=0;x<getImg().getWidth(); x++){
+				int pos = y*getImg().getWidth()+x;
+				int r = getArgb()[pos]>>16&0xff;
+				int g = getArgb()[pos]>>8&0xff;
+				int b = getArgb()[pos]&0xff;
+				if((r!=g)&&(g!=b))
+				return false;
+			}
+		}
+		return true;
+	}
 
 //	public void printKernel(boolean[][] kernel) {
 //		for (boolean[] xS : kernel) {
@@ -420,7 +450,6 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxRightBorder().setMargin(getradioBtn5(), new Insets(5,5,5,0));
 		getvBoxRightBorder().getChildren().addAll(getComboBox(),getradioBtn3(),getradioBtn5());
 		root.setRight(getvBoxRightBorder());
-		
 	}
 	
 	
@@ -428,28 +457,29 @@ public class MyPluginCommand implements PathCommand {
 	private void selectOperation(String selected){
 		if(selected.contains("Edge")){
 			updateViewEdge();
+			drawHist = false;
+			createCenter();
 			setChoiceOperation("EDGE");
 		}
 		else if(selected.contains("Gauss")){
 			updateViewForNonSelectableOperations();
+			drawHist = false;
+			createCenter();
 			setChoiceOperation("GAUSS");
 			//fillGridWithText("5er Matrix", getChoiceOperation());
-			
 		}
 		else if(selected.contains("Dilatation")){
 			updateViewMorph();
-			drawHist=false;
 			createCenter();
 			setChoiceOperation("DILATATION");
 		}else if(selected.contains("Erosion")){
 			updateViewMorph();
-			drawHist=false;
-			
+			createCenter();
 			setChoiceOperation("EROSION");
 		}
 		else if(selected.contains("Binary")){
 			updateViewForNonSelectableOperations();
-			drawHist=false;
+			drawHist=true;
 			createCenter();
 			setChoiceOperation("BINARY");
 		}
@@ -461,14 +491,16 @@ public class MyPluginCommand implements PathCommand {
 		}
 		else if(selected.contains("Contour")){
 			updateViewForNonSelectableOperations();
+			drawHist=true;
+			createCenter();
 			setChoiceOperation("CONTOUR");
 		}
 		else if(selected.contains("Select")){
-			System.out.println("Select");
 			updateViewEdge();
+			drawHist=true;
+			createCenter();
 			setChoiceOperation("NOOPERATION");
 		}
-		
 	}
 	
 	//GUI update wenn Dilatation bzw Erosion ausgewaehlt wird
@@ -479,6 +511,7 @@ public class MyPluginCommand implements PathCommand {
 		getradioBtn5().setDisable(true);
 		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
+		drawHist=false;
 		//cleanGrid();
 	}
 	
@@ -504,16 +537,12 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 	
-	
 	@SuppressWarnings("restriction")
 	private void createCenter(){
-		
 		paneCenter = makePaneCenter(getGridSize());
-		//Pane t = drawHistogram();
 		getRoot().setAlignment(paneCenter, Pos.CENTER);
 		getRoot().setMargin(paneCenter, new Insets(20, 20, 20, 20));
 		getRoot().setCenter(paneCenter);
-		
 	}
 	
 	
@@ -585,32 +614,17 @@ public class MyPluginCommand implements PathCommand {
 			System.out.println("Betritt draw Histo");
 		}
 		else{
-			bearb.addListener(new ChangeListener() {
-			    @Override
-			    public void changed(ObservableValue o, Object oldVal, Object newVal) {
-			        System.out.println(bearb);
-			    }
-			}); 
-		
-			
-			adjustGrid(getPaneCenter().getWidth(), 400, size, pane);
-			pane.widthProperty().addListener(e->{
+			pane.heightProperty().addListener(e->{
 				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);
-				System.out.println("Betritt width property");
 				});
-			
-			
+			pane.widthProperty().addListener(e->{
+				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);				
+				});			
 		}
 		return pane;
 	}
 	
-	
-	
-	
-
-
-
-
+	//Grid wird der Graphic angepasst
 	private void adjustGrid(double widthPane, double heightPane, int size, Pane pane){
 		double width = widthPane / size;
 		System.out.println("Widthhhhhhhh" + width);
@@ -677,6 +691,55 @@ public class MyPluginCommand implements PathCommand {
 //		}
 //	}
 	
+	
+	public LineChart<String, Number> drawHistogram(){
+		final CategoryAxis xAxis = new CategoryAxis();
+		final NumberAxis yAxis = new NumberAxis();
+		final LineChart<String, Number> chartHistogram
+		= new LineChart<>(xAxis, yAxis);
+		chartHistogram.getXAxis().setAutoRanging(true);
+		chartHistogram.getYAxis().setAutoRanging(true);
+		chartHistogram.setCreateSymbols(false);
+		XYChart.Series seriesRed= new XYChart.Series();
+		seriesRed.setName("Red");
+		XYChart.Series seriesGreen= new XYChart.Series();
+		seriesGreen.setName("Green");
+		XYChart.Series seriesBlue= new XYChart.Series();
+		seriesBlue.setName("Blue");
+
+		for(int i=0; i<red.length;i++){
+			seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
+			seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
+			seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
+		}
+		chartHistogram.getData().addAll(seriesRed, seriesGreen, seriesBlue);
+		return chartHistogram;
+	}
+	
+	
+	private void fillRGBWithValues(){
+		for (int i = 0; i < 256; i++) {
+			alpha[i] = red[i] = green[i] = blue[i] = 0;
+		}
+		for(int y =0; y< getImg().getHeight(); y++){
+			for(int x=0;x<getImg().getWidth(); x++){
+				int pos = y*getImg().getWidth()+x;
+				int r = getArgb()[pos]>>16&0xff;
+				int g = getArgb()[pos]>>8&0xff;
+				int b = getArgb()[pos]&0xff;
+				red[r]++;
+				green[g]++;
+				blue[b]++;
+			}
+		}
+	}
+	
+	
+	
+	
+	
+
+
 	//Wird beim Start des Plugins aufgerufen. Die Gui wird auf default gestellt
 	@SuppressWarnings("restriction")
 	private void setViewToDefault(){
@@ -684,7 +747,7 @@ public class MyPluginCommand implements PathCommand {
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
 	}
-	
+
 	//Alle Nodes des Plugins werden hier initialisiert
 	@SuppressWarnings("restriction")
 	private void initNodes(){
@@ -702,52 +765,6 @@ public class MyPluginCommand implements PathCommand {
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
 	}
-	
-
-
-	public LineChart<String, Number> drawHistogram(){
-		final CategoryAxis xAxis = new CategoryAxis();
-		final NumberAxis yAxis = new NumberAxis();
-		final LineChart<String, Number> chartHistogram
-		= new LineChart<>(xAxis, yAxis);
-		chartHistogram.getXAxis().setAutoRanging(true);
-		chartHistogram.getYAxis().setAutoRanging(true);
-		chartHistogram.setCreateSymbols(false);
-		XYChart.Series seriesRed= new XYChart.Series();
-		seriesRed.setName("Red");
-		XYChart.Series seriesGreen= new XYChart.Series();
-		seriesGreen.setName("Green");
-		XYChart.Series seriesBlue= new XYChart.Series();
-		seriesBlue.setName("Blue");
-
-		for(int i=0; i<256;i++){
-			seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
-			seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
-			seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
-		}
-
-		chartHistogram.getData().addAll(seriesRed, seriesGreen, seriesBlue);
-		return chartHistogram;
-	}
-	
-	
-	private void fillRGBWithValues(){
-		for (int i = 0; i < 256; i++) {
-			alpha[i] = red[i] = green[i] = blue[i] = 0;
-		}
-		for(int y =0; y< getImg().getHeight(); y++){
-			for(int x=0;x<getImg().getWidth(); x++){
-				int pos = y*getImg().getWidth()+x;
-				int r = argb[pos]>>16&0xff;
-				int g = argb[pos]>>8&0xff;
-				int b = argb[pos]&0xff;
-				red[r]++;
-				green[g]++;
-				blue[b]++;
-			}
-		}
-	}
-		
 		
 		
 		
@@ -1067,15 +1084,18 @@ public class MyPluginCommand implements PathCommand {
 		this.paneCenter = paneCenter;
 	}
 	
-	public BooleanProperty getBearb() {
-		return bearb;
+	public boolean getBearb() {
+		return bearb.get();
 	}
 
+	public BooleanProperty bearbProperty() {
+	    return bearb;
+	  }
 
 
 
-	public void setBearb(BooleanProperty bearb) {
-		this.bearb = bearb;
+	public void setBearb(boolean bearbei) {
+		bearb.set(bearbei);
 	}
 	
 }
