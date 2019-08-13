@@ -137,7 +137,6 @@ public class MyPluginCommand implements PathCommand {
 	private long green[];
 	private long blue[];
 	private boolean drawHist;
-	public BooleanProperty bearb;
 	
 
 	public MyPluginCommand(final QuPathGUI qupath) {
@@ -158,7 +157,7 @@ public class MyPluginCommand implements PathCommand {
 		green = new long[256];
 		blue =  new long[256];
 		drawHist = true;
-		bearb = new SimpleBooleanProperty(false);
+		
 		
 	}
 
@@ -170,7 +169,6 @@ public class MyPluginCommand implements PathCommand {
 	public void run() {
 		initNodes();
 		setViewToDefault();
-		
 		img = qupath.getViewer().getThumbnail(); // create Image
 		argb = new int[getImg().getHeight() * getImg().getWidth()];
 		this.label = new int[getImg().getHeight()][getImg().getWidth()];
@@ -178,7 +176,13 @@ public class MyPluginCommand implements PathCommand {
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
 		
 		//Versuch zum Histogramm
-		
+		for(int i=0;i<5;i++ ){
+			for(int j=0;j<5;j++ ){
+				getTextForGrid()[i][j] = new Text("");
+				
+			}
+			
+		}
 
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
@@ -433,12 +437,12 @@ public class MyPluginCommand implements PathCommand {
 	                   RadioButton button = (RadioButton) gettGroup().getSelectedToggle();
 	                   if(button.getText().contains("3er Matrix")){
 	                	   setSizeBorder(1);
-	                	//   cleanGrid();
-	                	   //fillGridWithText(button.getText(), getChoiceOperation());
+	                	   cleanGrid();
+	                	   fillGridWithText(button.getText(), getChoiceOperation());
 	                   }else{
 	                	   setSizeBorder(2);
-	                	 //  cleanGrid();
-	                	   //fillGridWithText(button.getText(),  getChoiceOperation());
+	                	   cleanGrid();
+	                	   fillGridWithText(button.getText(),  getChoiceOperation());
 	                   }
 	               }
 	           }
@@ -466,7 +470,6 @@ public class MyPluginCommand implements PathCommand {
 			drawHist = false;
 			createCenter();
 			setChoiceOperation("GAUSS");
-			//fillGridWithText("5er Matrix", getChoiceOperation());
 		}
 		else if(selected.contains("Dilatation")){
 			updateViewMorph();
@@ -509,10 +512,8 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(false);
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
-		getradioBtn3().setSelected(true);
 		setSizeBorder(1);
 		drawHist=false;
-		//cleanGrid();
 	}
 	
 	//GUI update wenn Graustufenbild, Binärbild oder GaussFilter angewendet wird
@@ -521,9 +522,7 @@ public class MyPluginCommand implements PathCommand {
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
 		getvBoxLeftBorder().setDisable(true);
-		getradioBtn3().setSelected(true);
-		setSizeBorder(1);
-		//cleanGrid();
+		setSizeBorder(2);
 	}
 	
 	@SuppressWarnings("restriction")
@@ -531,10 +530,10 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(false);
 		getradioBtn5().setDisable(false);
-		//cleanGrid();
-		
+		setSizeBorder(1);
 	}
 	
+
 	
 	
 	@SuppressWarnings("restriction")
@@ -562,7 +561,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	//
+	
 	@SuppressWarnings("restriction")
 	private void createLeftBorder(){
 		getBtn1().setText("Button 1");
@@ -611,9 +610,11 @@ public class MyPluginCommand implements PathCommand {
 			fillRGBWithValues();
 			LineChart<String, Number> histo= drawHistogram();
 			pane.getChildren().add(histo);
-			System.out.println("Betritt draw Histo");
+			histo.prefHeightProperty().bind(pane.heightProperty());
+			histo.prefWidthProperty().bind(pane.prefWidthProperty());
 		}
 		else{
+			
 			pane.heightProperty().addListener(e->{
 				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);
 				});
@@ -627,12 +628,11 @@ public class MyPluginCommand implements PathCommand {
 	//Grid wird der Graphic angepasst
 	private void adjustGrid(double widthPane, double heightPane, int size, Pane pane){
 		double width = widthPane / size;
-		System.out.println("Widthhhhhhhh" + width);
 		double height = heightPane/size;
 		pane.getChildren().clear();
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
-				getTextForGrid()[i][j] = new Text("i");
+				getTextForGrid()[i][j] = new Text("");
 				getRec()[i][j] = new Rectangle();
 				getRec()[i][j].setX(i * width);
 				getRec()[i][j].setY(j * height);
@@ -640,7 +640,6 @@ public class MyPluginCommand implements PathCommand {
 				getRec()[i][j].setHeight(height);
 				getRec()[i][j].setFill(null);
 				getRec()[i][j].setStroke(Color.BLACK);
-				System.out.println("Bin in adjustGrid");
 				pane.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);}}
 	}
 	
@@ -659,37 +658,38 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	//Alle Operationen die Grid in der Gui mit Zahlen befüllen
-//	@SuppressWarnings("restriction")
-//	private void fillGridWithText(String nameMatrix, String nameOperation){
-//		//cleanGrid();
-//		double width = getWidthOfGrid() / getGridSize();
-//		for (int i = 0; i < getGridSize(); i++) {
-//			for (int j = 0; j < getGridSize(); j++) {
-//				getTextForGrid()[i][j].setX(i *width+17);
-//				getTextForGrid()[i][j].setY(j*width+30);
-//				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
-//				if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("EDGE"))
-//					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
-//				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
-//					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
-//				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS")){
-//					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
-//				}					
-//			}
-//		}
-//	}
+	//Die einzelnen Rechtecke/Panes des Grids werden mit Zahlen befuellt
+	@SuppressWarnings("restriction")
+	private void fillGridWithText(String nameMatrix, String nameOperation){
+		cleanGrid();
+		double width = getWidthOfGrid() / getGridSize();
+		for (int i = 0; i < getGridSize(); i++) {
+			for (int j = 0; j < getGridSize(); j++) {
+				getTextForGrid()[i][j].setX(i *width+17);
+				getTextForGrid()[i][j].setY(j*width+30);
+				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
+				if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("EDGE"))
+					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
+				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
+					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
+				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS")){
+					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
+				}					
+			}
+		}
+	}
 	
 	//Das Grid in der GUI wird gelöscht bzw alle Zahlen und Farben gelöscht
-	//@SuppressWarnings("restriction")
-//	private void cleanGrid(){
-//		for (int i = 0; i < getGridSize(); i++) {
-//			for (int j = 0; j < getGridSize(); j++) {
-//				getRec()[i][j].setFill(Color.WHITE);
-//				getTextForGrid()[i][j].setText("");
-//			}
-//		}
-//	}
+	@SuppressWarnings("restriction")
+	private void cleanGrid(){
+		System.out.println("Enter Clean Grid");
+		for (int i = 0; i < getGridSize(); i++) {
+			for (int j = 0; j < getGridSize(); j++) {
+				//getRec()[i][j].setFill(Color.WHITE);
+				getTextForGrid()[i][j].setText("");
+			}
+		}
+	}
 	
 	
 	public LineChart<String, Number> drawHistogram(){
@@ -746,6 +746,7 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setDisable(true);
 		getradioBtn3().setDisable(true);
 		getradioBtn5().setDisable(true);
+		
 	}
 
 	//Alle Nodes des Plugins werden hier initialisiert
@@ -1084,18 +1085,5 @@ public class MyPluginCommand implements PathCommand {
 		this.paneCenter = paneCenter;
 	}
 	
-	public boolean getBearb() {
-		return bearb.get();
-	}
-
-	public BooleanProperty bearbProperty() {
-	    return bearb;
-	  }
-
-
-
-	public void setBearb(boolean bearbei) {
-		bearb.set(bearbei);
-	}
 	
 }
