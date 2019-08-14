@@ -141,7 +141,16 @@ public class MyPluginCommand implements PathCommand {
 	private long maxValueHistogramm;
 	private BooleanProperty textGrid ;
 	private String nameEdgeMatrix;
-
+	public static final String NO_OPERATION = "Select";
+	public static final String OPERATION_EROSION = "Erosion";
+	public static final String OPERATION_DILATATION = "Dilatation";
+	public static final String OPERATION_GAUSS = "Gauss";
+	public static final String OPERATION_BINARY = "Binary";
+	public static final String OPERATION_EDGE = "Edge";
+	public static final String OPERATION_GREYSCALE = "Greyscale";
+	public static final String OPERATION_CONTOUR = "Contour";
+	public static final String MATRIX_5 = "5er Matrix";
+	public static final String MATRIX_3 = "3er Matrix";
 	
 	
 
@@ -196,7 +205,7 @@ public class MyPluginCommand implements PathCommand {
 		dialog = createDialog();
 		getDialog().setOnCloseRequest(event ->
 	    {
-	        this.setChoiceOperation("NOOPERATION");
+	        this.setChoiceOperation(NO_OPERATION);
 	        getDialog().close();
 	    });
 		getDialog().showAndWait();
@@ -204,7 +213,7 @@ public class MyPluginCommand implements PathCommand {
 
 		//Nach Bestätigung des Ok Knopfes bzw nach schliessen des Fensters wird die Ausgewaehlte Operation durchgeführt 
 		switch(getChoiceOperation()){
-		case "BINARY":
+		case OPERATION_BINARY:
 			Image grey = new GreyscaleImage();
 			grey.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), 0);
 			setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
@@ -212,13 +221,13 @@ public class MyPluginCommand implements PathCommand {
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
-		case "GRAYSCALE":
+		case OPERATION_GREYSCALE:
 			//Hier wird aus einem Farbbild ein Graustufenbild erzeugt
 			Image greyscale = new GreyscaleImage();
 			greyscale.convertImage(getImg().getWidth(), getImg().getHeight(), getArgb(), 0);
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
-		case "DILATATION":
+		case OPERATION_DILATATION:
 			BufferedImage dilatationImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] dilatArray = new int[dilatationImage.getHeight() * dilatationImage.getWidth()];
 			MorphOperations dilatation = new Dilatation();
@@ -226,7 +235,7 @@ public class MyPluginCommand implements PathCommand {
 			dilatation.executeMorpOperation(dilatationImage.getWidth(), dilatationImage.getHeight(), dilatArray, getArgb(), getImg().getWidth(), getHalfKernelSize(), getKernel());			
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
-		case "EROSION":
+		case OPERATION_EROSION:
 			//Erosion erhät man wenn man auf ein Binärbild eine inversion durchführt, darauf dann eine Dilatation und
 			//zum Schluss nochmal eine Inversion
 			invertImage(img.getWidth(), img.getHeight(), getArgb());
@@ -238,20 +247,20 @@ public class MyPluginCommand implements PathCommand {
 			invertImage(img.getWidth(), img.getHeight(), getArgb());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
-		case "GAUSS":
+		case OPERATION_GAUSS:
 			//Um das Bild zu gläten
 			Filter gauss = new GaussFilter();
 			gauss.filterOperation(getImg().getWidth(), getImg().getHeight(), getHalfKernelSize(), getGridSize(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
-		case "EDGE":
+		case OPERATION_EDGE:
 			//
 			Filter laPlace = new LaPlaceFilter();
 			laPlace.filterOperation(getImg().getWidth(), getImg().getHeight(), getSizeBorder(), getGridSize(), getArgb(), getUpdatedArray());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getUpdatedArray());
 			break;
 		
-		case "CONTOUR":
+		case OPERATION_CONTOUR:
 			//Diese Contourverfolgung funktioniert nur bei Anwendung auf ein Binärbild
 			Contour c = new Contour(getImg().getWidth(), getImg().getHeight(), getArgb());
 			c.twoPass();
@@ -261,7 +270,7 @@ public class MyPluginCommand implements PathCommand {
 			}
 			break;
 
-		case "NOOPERATION":
+		case NO_OPERATION:
 			break;
 		
 		}
@@ -419,14 +428,14 @@ public class MyPluginCommand implements PathCommand {
 	
 	@SuppressWarnings("restriction")
 	private void createRightBorder(){
-		getComboBox().getItems().add("Select");
-		getComboBox().getItems().add("Grayscale");
-		getComboBox().getItems().add("Binary"); 
-		getComboBox().getItems().add("Edge"); 
-		getComboBox().getItems().add("Gauss"); 
-		getComboBox().getItems().add("Dilatation"); 
-		getComboBox().getItems().add("Erosion"); 
-		getComboBox().getItems().add("Contour");
+		getComboBox().getItems().add(NO_OPERATION);
+		getComboBox().getItems().add(OPERATION_GREYSCALE);
+		getComboBox().getItems().add(OPERATION_BINARY); 
+		getComboBox().getItems().add(OPERATION_EDGE); 
+		getComboBox().getItems().add(OPERATION_GAUSS); 
+		getComboBox().getItems().add(OPERATION_DILATATION); 
+		getComboBox().getItems().add(OPERATION_EROSION); 
+		getComboBox().getItems().add(OPERATION_CONTOUR);
 		getComboBox().getSelectionModel().select(0);
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
@@ -434,25 +443,22 @@ public class MyPluginCommand implements PathCommand {
 				selectComboBoxOperation(selected);
 			}    
 		});
-		getradioBtn3().setText("3er Matrix");
-		getradioBtn5().setText("5er Matrix");
+		getradioBtn3().setText(MATRIX_3);
+		getradioBtn5().setText(MATRIX_5);
 		tGroup.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
 	           @Override
 	           public void changed(ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) {
 	               if (tGroup.getSelectedToggle() != null) {
 	                   RadioButton button = (RadioButton) gettGroup().getSelectedToggle();
-	                   if(button.getText().contains("3er Matrix")){
+	                   if(button.getText().contains(MATRIX_3)){
 	                	   setSizeBorder(1);
-	                	   cleanGrid();
-	                	   //fillGridWithText(button.getText(), getChoiceOperation());
-	                	   setNameEdgeMatrix("3er Matrix");
+	                	   cleanGrid();	                	   
+	                	   setNameEdgeMatrix(MATRIX_3);
 	                	   triggerTextGridProperty();
 	                	   
 	                   }else{
 	                	   setSizeBorder(2);
-	                	   //cleanGrid();
-	                	   //fillGridWithText(button.getText(),  getChoiceOperation());
-	                	   setNameEdgeMatrix("5er Matrix");
+	                	   setNameEdgeMatrix(MATRIX_5);
 	                	   triggerTextGridProperty();
 	                   }
 	               }
@@ -470,51 +476,52 @@ public class MyPluginCommand implements PathCommand {
 	
 	//Auswahl aller Operationen
 	private void selectComboBoxOperation(String selected){
-		if(selected.contains("Edge")){
+		if(selected.contains(OPERATION_EDGE)){
 			updateViewEdge();
 			drawHist = false;
 			createCenter();
-			setChoiceOperation("EDGE");
+			setChoiceOperation(OPERATION_EDGE);
 			triggerTextGridProperty();
 		}
-		else if(selected.contains("Gauss")){
+		else if(selected.contains(OPERATION_GAUSS)){
 			updateViewForNonSelectableOperations();
 			drawHist = false;
 			createCenter();
-			setChoiceOperation("GAUSS");
+			setChoiceOperation(OPERATION_GAUSS);
 		}
-		else if(selected.contains("Dilatation")){
+		else if(selected.contains(OPERATION_DILATATION)){
 			updateViewMorph();
 			createCenter();
-			setChoiceOperation("DILATATION");
-		}else if(selected.contains("Erosion")){
+			setChoiceOperation(OPERATION_DILATATION);
+		}
+		else if(selected.contains(OPERATION_EROSION)){
 			updateViewMorph();
 			createCenter();
-			setChoiceOperation("EROSION");
+			setChoiceOperation(OPERATION_EROSION);
 		}
-		else if(selected.contains("Binary")){
+		else if(selected.contains(OPERATION_BINARY)){
 			updateViewForNonSelectableOperations();
 			drawHist=true;
 			createCenter();
-			setChoiceOperation("BINARY");
+			setChoiceOperation(OPERATION_BINARY);
 		}
-		else if(selected.contains("Grayscale")){
+		else if(selected.contains(OPERATION_GREYSCALE)){
 			updateViewForNonSelectableOperations();
 			drawHist=true;
 			createCenter();
-			setChoiceOperation("GRAYSCALE");
+			setChoiceOperation(OPERATION_GREYSCALE);
 		}
-		else if(selected.contains("Contour")){
+		else if(selected.contains(OPERATION_CONTOUR)){
 			updateViewForNonSelectableOperations();
 			drawHist=true;
 			createCenter();
-			setChoiceOperation("CONTOUR");
+			setChoiceOperation(OPERATION_CONTOUR);
 		}
-		else if(selected.contains("Select")){
+		else if(selected.contains(NO_OPERATION)){
 			updateViewEdge();
 			drawHist=true;
 			createCenter();
-			setChoiceOperation("NOOPERATION");
+			setChoiceOperation(NO_OPERATION);
 		}
 	}
 	
@@ -674,23 +681,19 @@ public class MyPluginCommand implements PathCommand {
 	//Die einzelnen Rechtecke/Panes des Grids werden mit Zahlen befuellt
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String nameMatrix, String nameOperation){
-		//cleanGrid();
 		getPaneCenter().widthProperty().addListener(e->{
-				double width = getPaneCenter().getWidth() / getGridSize();
-				textToGrid(nameMatrix, nameOperation, width);
-				});
+			double width = getPaneCenter().getWidth() / getGridSize();
+			textToGrid(nameMatrix, nameOperation, width);
+		});
 		getPaneCenter().heightProperty().addListener(e->{
 			double width = getPaneCenter().getWidth() / getGridSize();
 			textToGrid(nameMatrix, nameOperation, width);
-			});
+		});
 		double width = getPaneCenter().getWidth() / getGridSize();
 		textToGrid(nameMatrix, nameOperation, width);
-		
-		
 	}
 	
 	private void textToGrid(String nameMatrix, String nameOperation, double width){
-		//cleanGrid();
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
 				getTextForGrid()[i][j].setX(i *width+17);
@@ -750,7 +753,6 @@ public class MyPluginCommand implements PathCommand {
 		}
    		seriesThreshold.getData().add(new XYChart.Data(String.valueOf(getThreshold()), 0));
 		seriesThreshold.getData().add(new XYChart.Data(String.valueOf(getThreshold()), getMaxValueHistogramm()));
-		
 		chartHistogram.getData().addAll(seriesRed, seriesGreen, seriesBlue, seriesThreshold);
 		return chartHistogram;
 	}
@@ -809,24 +811,22 @@ public class MyPluginCommand implements PathCommand {
 			for(int j=0;j<5;j++ ){
 				getTextForGrid()[i][j] = new Text("");
 			}
-		}					
+		}		
 		this.textGridProperty().set(false);	
+		//Immer wenn die BooleanProperty textGridProperty geandert wird, wird das Grid mit den dazugehörigen zahlen befuellt
 		setNameEdgeMatrix("3er Matrix");
 		this.textGridProperty().addListener(e->{
 			System.out.println("Betritt Listener");
-			
-				//double width = getPaneCenter().getWidth() / getGridSize();
-				if(getNameEdgeMatrix().contains("3er Matrix")){
-					System.out.println("betritt 3er Matrix");
-					fillGridWithText("3er Matrix", getChoiceOperation());
-				}
-					
-				else
-					fillGridWithText("5er Matrix", getChoiceOperation());
+				if((getNameEdgeMatrix().contains(MATRIX_3))&&(getChoiceOperation().contains(OPERATION_EDGE)))
+					fillGridWithText(MATRIX_3, getChoiceOperation());
+				else if((getNameEdgeMatrix().contains(MATRIX_5))&&(getChoiceOperation().contains(OPERATION_EDGE)))
+					fillGridWithText(MATRIX_5, getChoiceOperation());
+				else if((getChoiceOperation().contains(OPERATION_GAUSS)))
+					fillGridWithText(MATRIX_5, getChoiceOperation());
 		});
 	}
 	
-	//
+	//Aendert den boolean  damit die textGridProperty ausgelöst wird
 	private void triggerTextGridProperty(){
 		if(this.getTextGrid()==true)
 			this.textGrid.set(false);
