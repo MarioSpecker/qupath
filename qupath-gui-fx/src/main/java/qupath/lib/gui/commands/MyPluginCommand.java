@@ -18,7 +18,7 @@ import qupath.lib.gui.helpers.DisplayHelpers;
 import qupath.lib.plugins.parameters.BooleanParameter;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
-
+import javafx.scene.shape.Line;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -28,17 +28,18 @@ import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
-
+import javafx.scene.chart.XYChart.Data;
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
 
 import org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSet;
-
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.IntegerProperty;
+import java.util.Arrays;
+import java.util.Collections;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
+
+
+
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -137,7 +138,9 @@ public class MyPluginCommand implements PathCommand {
 	private long green[];
 	private long blue[];
 	private boolean drawHist;
-	
+	private long maxValueHistogramm;
+	private BooleanProperty textGridProperty ;
+
 
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
@@ -157,7 +160,8 @@ public class MyPluginCommand implements PathCommand {
 		green = new long[256];
 		blue =  new long[256];
 		drawHist = true;
-		
+		this.maxValueHistogramm = 0;
+		textGridProperty = new SimpleBooleanProperty(false);
 		
 	}
 
@@ -175,14 +179,14 @@ public class MyPluginCommand implements PathCommand {
 		updatedArray = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
 		
-		//Versuch zum Histogramm
-		for(int i=0;i<5;i++ ){
-			for(int j=0;j<5;j++ ){
-				getTextForGrid()[i][j] = new Text("");
-				
-			}
-			
-		}
+//		//Versuch zum Histogramm
+//		for(int i=0;i<5;i++ ){
+//			for(int j=0;j<5;j++ ){
+//				getTextForGrid()[i][j] = new Text("");
+//				
+//			}
+//			
+//		}
 
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
@@ -392,7 +396,7 @@ public class MyPluginCommand implements PathCommand {
 		Stage dialog = new Stage();
 		dialog.initOwner(qupath.getStage());
 		dialog.setTitle("My Plugin Dialog");
-		Scene scene = new Scene(addBorderPane());		
+		Scene scene = new Scene(addBorderPane(), 700, 400);		
 		scene.getStylesheets().add("css/StyleMario.css");
 		dialog.setScene(scene);
 		
@@ -611,10 +615,9 @@ public class MyPluginCommand implements PathCommand {
 			LineChart<String, Number> histo= drawHistogram();
 			pane.getChildren().add(histo);
 			histo.prefHeightProperty().bind(pane.heightProperty());
-			histo.prefWidthProperty().bind(pane.prefWidthProperty());
+			histo.prefWidthProperty().bind(pane.widthProperty());
 		}
 		else{
-			
 			pane.heightProperty().addListener(e->{
 				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);
 				});
@@ -662,7 +665,20 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String nameMatrix, String nameOperation){
 		cleanGrid();
-		double width = getWidthOfGrid() / getGridSize();
+		getPaneCenter().widthProperty().addListener(e->{
+				double width = getPaneCenter().getWidth() / getGridSize();
+				textToGrid(nameMatrix, nameOperation, width);
+				});
+		getPaneCenter().heightProperty().addListener(e->{
+			double width = getPaneCenter().getWidth() / getGridSize();
+			textToGrid(nameMatrix, nameOperation, width);
+			});
+		
+		
+	}
+	
+	private void textToGrid(String nameMatrix, String nameOperation, double width){
+		cleanGrid();
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
 				getTextForGrid()[i][j].setX(i *width+17);
@@ -706,13 +722,26 @@ public class MyPluginCommand implements PathCommand {
 		seriesGreen.setName("Green");
 		XYChart.Series seriesBlue= new XYChart.Series();
 		seriesBlue.setName("Blue");
-
-		for(int i=0; i<red.length;i++){
+		XYChart.Series seriesThreshold= new XYChart.Series();
+		seriesThreshold.setName("Threshold");
+		
+        
+   		for(int i=0; i<red.length;i++){
 			seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
 			seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
 			seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
+			
+			if(getMaxValueHistogramm() < red[i]) 
+		         setMaxValueHistogramm(red[i]);
+		    if(getMaxValueHistogramm() < green[i]) 
+		         setMaxValueHistogramm(green[i]);
+		    if(getMaxValueHistogramm() < blue[i]) 
+		         setMaxValueHistogramm(blue[i]);
 		}
-		chartHistogram.getData().addAll(seriesRed, seriesGreen, seriesBlue);
+   		seriesThreshold.getData().add(new XYChart.Data(String.valueOf(getThreshold()), 0));
+		seriesThreshold.getData().add(new XYChart.Data(String.valueOf(getThreshold()), getMaxValueHistogramm()));
+		
+		chartHistogram.getData().addAll(seriesRed, seriesGreen, seriesBlue, seriesThreshold);
 		return chartHistogram;
 	}
 	
@@ -727,11 +756,14 @@ public class MyPluginCommand implements PathCommand {
 				int r = getArgb()[pos]>>16&0xff;
 				int g = getArgb()[pos]>>8&0xff;
 				int b = getArgb()[pos]&0xff;
-				red[r]++;
-				green[g]++;
-				blue[b]++;
+				 
+			    
+				getRed()[r]++;
+				getGreen()[g]++;
+				getBlue()[b]++;
 			}
 		}
+	
 	}
 	
 	
@@ -1083,6 +1115,46 @@ public class MyPluginCommand implements PathCommand {
 
 	public void setPaneCenter(Pane paneCenter) {
 		this.paneCenter = paneCenter;
+	}
+	
+	public long getMaxValueHistogramm() {
+		return maxValueHistogramm;
+	}
+
+	public void setMaxValueHistogramm(long red2) {
+		this.maxValueHistogramm = red2;
+	}
+	
+	public long[] getAlpha() {
+		return alpha;
+	}
+
+	public void setAlpha(long[] alpha) {
+		this.alpha = alpha;
+	}
+
+	public long[] getRed() {
+		return red;
+	}
+
+	public void setRed(long[] red) {
+		this.red = red;
+	}
+
+	public long[] getGreen() {
+		return green;
+	}
+
+	public void setGreen(long[] green) {
+		this.green = green;
+	}
+
+	public long[] getBlue() {
+		return blue;
+	}
+
+	public void setBlue(long[] blue) {
+		this.blue = blue;
 	}
 	
 	
