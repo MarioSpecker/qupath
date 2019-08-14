@@ -139,9 +139,10 @@ public class MyPluginCommand implements PathCommand {
 	private long blue[];
 	private boolean drawHist;
 	private long maxValueHistogramm;
-	private BooleanProperty textGridProperty ;
+	private BooleanProperty textGrid ;
+	private String nameEdgeMatrix;
 
-
+	
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
 		this.gridSize = 5;
@@ -161,7 +162,8 @@ public class MyPluginCommand implements PathCommand {
 		blue =  new long[256];
 		drawHist = true;
 		this.maxValueHistogramm = 0;
-		textGridProperty = new SimpleBooleanProperty(false);
+		textGrid = new SimpleBooleanProperty(false);
+		this.nameEdgeMatrix = "3er matrix";
 		
 	}
 
@@ -171,6 +173,8 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	@Override
 	public void run() {
+		//Versuch zum Histogramm
+				
 		initNodes();
 		setViewToDefault();
 		img = qupath.getViewer().getThumbnail(); // create Image
@@ -179,14 +183,7 @@ public class MyPluginCommand implements PathCommand {
 		updatedArray = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
 		
-//		//Versuch zum Histogramm
-//		for(int i=0;i<5;i++ ){
-//			for(int j=0;j<5;j++ ){
-//				getTextForGrid()[i][j] = new Text("");
-//				
-//			}
-//			
-//		}
+		
 
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
 		setThreshold(getIterativeThreshold(getArgb(), getImg().getWidth(), getImg().getHeight()));
@@ -441,8 +438,10 @@ public class MyPluginCommand implements PathCommand {
 	                   RadioButton button = (RadioButton) gettGroup().getSelectedToggle();
 	                   if(button.getText().contains("3er Matrix")){
 	                	   setSizeBorder(1);
-	                	   cleanGrid();
+	                	   //cleanGrid();
+	                	   
 	                	   fillGridWithText(button.getText(), getChoiceOperation());
+	                	   
 	                   }else{
 	                	   setSizeBorder(2);
 	                	   cleanGrid();
@@ -468,12 +467,17 @@ public class MyPluginCommand implements PathCommand {
 			drawHist = false;
 			createCenter();
 			setChoiceOperation("EDGE");
+			if(this.getTextGrid()==true)
+				this.textGrid.set(false);
+			else
+				this.textGrid.set(true);
 		}
 		else if(selected.contains("Gauss")){
 			updateViewForNonSelectableOperations();
 			drawHist = false;
 			createCenter();
 			setChoiceOperation("GAUSS");
+			
 		}
 		else if(selected.contains("Dilatation")){
 			updateViewMorph();
@@ -532,6 +536,7 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void updateViewEdge(){
 		getvBoxLeftBorder().setDisable(true);
+		getradioBtn3().setSelected(true);
 		getradioBtn3().setDisable(false);
 		getradioBtn5().setDisable(false);
 		setSizeBorder(1);
@@ -665,6 +670,7 @@ public class MyPluginCommand implements PathCommand {
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String nameMatrix, String nameOperation){
 		cleanGrid();
+		
 		getPaneCenter().widthProperty().addListener(e->{
 				double width = getPaneCenter().getWidth() / getGridSize();
 				textToGrid(nameMatrix, nameOperation, width);
@@ -797,6 +803,17 @@ public class MyPluginCommand implements PathCommand {
 		vBoxLeftBorder = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
+		for(int i=0;i<5;i++ ){			//
+			for(int j=0;j<5;j++ ){
+				getTextForGrid()[i][j] = new Text("");
+			}
+		}
+		this.textGridProperty().set(false);
+		this.textGridProperty().addListener(e->{
+			System.out.println("Betritt Listener");
+				double width = getPaneCenter().getWidth() / getGridSize();
+				fillGridWithText("3er Matrix", getChoiceOperation());
+		});
 	}
 		
 		
@@ -902,10 +919,6 @@ public class MyPluginCommand implements PathCommand {
 	public void setvBoxLeftBorder(VBox vBox) {
 		this.vBoxLeftBorder = vBox;
 	}
-
-
-
-
 
 
 
@@ -1156,6 +1169,18 @@ public class MyPluginCommand implements PathCommand {
 	public void setBlue(long[] blue) {
 		this.blue = blue;
 	}
+	
+	public final Boolean getTextGrid() {
+	    return textGrid.get();
+	 }
+
+	  public final void setTextGrid(Boolean text) {
+	    this.textGrid.set(text);
+	  }
+
+	  public BooleanProperty textGridProperty() {
+	    return textGrid ;
+	  }
 	
 	
 }
