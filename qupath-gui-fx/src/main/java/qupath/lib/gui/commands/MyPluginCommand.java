@@ -699,11 +699,11 @@ public class MyPluginCommand implements PathCommand {
 				getTextForGrid()[i][j].setX(i *width+17);
 				getTextForGrid()[i][j].setY(j*width+30);
 				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
-				if(nameMatrix.contains("3er Matrix")&&nameOperation.contains("EDGE"))
+				if(nameMatrix.contains(MATRIX_3)&&nameOperation.contains(OPERATION_EDGE))
 					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
-				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("EDGE"))
+				else if (nameMatrix.contains(MATRIX_5)&&nameOperation.contains(OPERATION_EDGE))
 					getTextForGrid()[i][j].setText(getlPF5Matrix()[i][j]);
-				else if (nameMatrix.contains("5er Matrix")&&nameOperation.contains("GAUSS")){
+				else if (nameMatrix.contains(MATRIX_5)&&nameOperation.contains(OPERATION_GAUSS)){
 					getTextForGrid()[i][j].setText(getGaussMatrix5x5()[i][j]);
 				}					
 			}
@@ -713,7 +713,6 @@ public class MyPluginCommand implements PathCommand {
 	//Das Grid in der GUI wird gelöscht bzw alle Zahlen und Farben gelöscht
 	@SuppressWarnings("restriction")
 	private void cleanGrid(){
-		System.out.println("Enter Clean Grid");
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
 				//getRec()[i][j].setFill(Color.WHITE);
@@ -779,9 +778,6 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 	
-	
-
-
 	//Wird beim Start des Plugins aufgerufen. Die Gui wird auf default gestellt
 	@SuppressWarnings("restriction")
 	private void setViewToDefault(){
@@ -814,7 +810,7 @@ public class MyPluginCommand implements PathCommand {
 		}		
 		this.textGridProperty().set(false);	
 		//Immer wenn die BooleanProperty textGridProperty geandert wird, wird das Grid mit den dazugehörigen zahlen befuellt
-		setNameEdgeMatrix("3er Matrix");
+		setNameEdgeMatrix(MATRIX_3);
 		this.textGridProperty().addListener(e->{
 			System.out.println("Betritt Listener");
 				if((getNameEdgeMatrix().contains(MATRIX_3))&&(getChoiceOperation().contains(OPERATION_EDGE)))
