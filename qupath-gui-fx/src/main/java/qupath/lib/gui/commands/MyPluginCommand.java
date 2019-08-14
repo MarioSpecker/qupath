@@ -143,6 +143,11 @@ public class MyPluginCommand implements PathCommand {
 	private String nameEdgeMatrix;
 
 	
+	
+
+
+
+
 	public MyPluginCommand(final QuPathGUI qupath) {
 		this.qupath = qupath;
 		this.gridSize = 5;
@@ -426,7 +431,7 @@ public class MyPluginCommand implements PathCommand {
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
 				//Bei Auswahl eines Items aus der ComboBox 
-				selectOperation(selected);
+				selectComboBoxOperation(selected);
 			}    
 		});
 		getradioBtn3().setText("3er Matrix");
@@ -438,14 +443,17 @@ public class MyPluginCommand implements PathCommand {
 	                   RadioButton button = (RadioButton) gettGroup().getSelectedToggle();
 	                   if(button.getText().contains("3er Matrix")){
 	                	   setSizeBorder(1);
-	                	   //cleanGrid();
-	                	   
-	                	   fillGridWithText(button.getText(), getChoiceOperation());
+	                	   cleanGrid();
+	                	   //fillGridWithText(button.getText(), getChoiceOperation());
+	                	   setNameEdgeMatrix("3er Matrix");
+	                	   triggerTextGridProperty();
 	                	   
 	                   }else{
 	                	   setSizeBorder(2);
-	                	   cleanGrid();
-	                	   fillGridWithText(button.getText(),  getChoiceOperation());
+	                	   //cleanGrid();
+	                	   //fillGridWithText(button.getText(),  getChoiceOperation());
+	                	   setNameEdgeMatrix("5er Matrix");
+	                	   triggerTextGridProperty();
 	                   }
 	               }
 	           }
@@ -461,23 +469,19 @@ public class MyPluginCommand implements PathCommand {
 	
 	
 	//Auswahl aller Operationen
-	private void selectOperation(String selected){
+	private void selectComboBoxOperation(String selected){
 		if(selected.contains("Edge")){
 			updateViewEdge();
 			drawHist = false;
 			createCenter();
 			setChoiceOperation("EDGE");
-			if(this.getTextGrid()==true)
-				this.textGrid.set(false);
-			else
-				this.textGrid.set(true);
+			triggerTextGridProperty();
 		}
 		else if(selected.contains("Gauss")){
 			updateViewForNonSelectableOperations();
 			drawHist = false;
 			createCenter();
 			setChoiceOperation("GAUSS");
-			
 		}
 		else if(selected.contains("Dilatation")){
 			updateViewMorph();
@@ -627,7 +631,8 @@ public class MyPluginCommand implements PathCommand {
 				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);
 				});
 			pane.widthProperty().addListener(e->{
-				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);				
+				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);
+				
 				});			
 		}
 		return pane;
@@ -669,8 +674,7 @@ public class MyPluginCommand implements PathCommand {
 	//Die einzelnen Rechtecke/Panes des Grids werden mit Zahlen befuellt
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String nameMatrix, String nameOperation){
-		cleanGrid();
-		
+		//cleanGrid();
 		getPaneCenter().widthProperty().addListener(e->{
 				double width = getPaneCenter().getWidth() / getGridSize();
 				textToGrid(nameMatrix, nameOperation, width);
@@ -679,12 +683,14 @@ public class MyPluginCommand implements PathCommand {
 			double width = getPaneCenter().getWidth() / getGridSize();
 			textToGrid(nameMatrix, nameOperation, width);
 			});
+		double width = getPaneCenter().getWidth() / getGridSize();
+		textToGrid(nameMatrix, nameOperation, width);
 		
 		
 	}
 	
 	private void textToGrid(String nameMatrix, String nameOperation, double width){
-		cleanGrid();
+		//cleanGrid();
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
 				getTextForGrid()[i][j].setX(i *width+17);
@@ -730,19 +736,17 @@ public class MyPluginCommand implements PathCommand {
 		seriesBlue.setName("Blue");
 		XYChart.Series seriesThreshold= new XYChart.Series();
 		seriesThreshold.setName("Threshold");
-		
-        
-   		for(int i=0; i<red.length;i++){
+		for(int i=0; i<red.length;i++){
 			seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
 			seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
 			seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
 			
-			if(getMaxValueHistogramm() < red[i]) 
-		         setMaxValueHistogramm(red[i]);
-		    if(getMaxValueHistogramm() < green[i]) 
-		         setMaxValueHistogramm(green[i]);
-		    if(getMaxValueHistogramm() < blue[i]) 
-		         setMaxValueHistogramm(blue[i]);
+			if(getMaxValueHistogramm() < getRed()[i]) 
+		         setMaxValueHistogramm(getRed()[i]);
+		    if(getMaxValueHistogramm() < getGreen()[i]) 
+		         setMaxValueHistogramm(getGreen()[i]);
+		    if(getMaxValueHistogramm() < getBlue()[i]) 
+		         setMaxValueHistogramm(getBlue()[i]);
 		}
    		seriesThreshold.getData().add(new XYChart.Data(String.valueOf(getThreshold()), 0));
 		seriesThreshold.getData().add(new XYChart.Data(String.valueOf(getThreshold()), getMaxValueHistogramm()));
@@ -762,8 +766,6 @@ public class MyPluginCommand implements PathCommand {
 				int r = getArgb()[pos]>>16&0xff;
 				int g = getArgb()[pos]>>8&0xff;
 				int b = getArgb()[pos]&0xff;
-				 
-			    
 				getRed()[r]++;
 				getGreen()[g]++;
 				getBlue()[b]++;
@@ -807,13 +809,29 @@ public class MyPluginCommand implements PathCommand {
 			for(int j=0;j<5;j++ ){
 				getTextForGrid()[i][j] = new Text("");
 			}
-		}
-		this.textGridProperty().set(false);
+		}					
+		this.textGridProperty().set(false);	
+		setNameEdgeMatrix("3er Matrix");
 		this.textGridProperty().addListener(e->{
 			System.out.println("Betritt Listener");
-				double width = getPaneCenter().getWidth() / getGridSize();
-				fillGridWithText("3er Matrix", getChoiceOperation());
+			
+				//double width = getPaneCenter().getWidth() / getGridSize();
+				if(getNameEdgeMatrix().contains("3er Matrix")){
+					System.out.println("betritt 3er Matrix");
+					fillGridWithText("3er Matrix", getChoiceOperation());
+				}
+					
+				else
+					fillGridWithText("5er Matrix", getChoiceOperation());
 		});
+	}
+	
+	//
+	private void triggerTextGridProperty(){
+		if(this.getTextGrid()==true)
+			this.textGrid.set(false);
+		else
+			this.textGrid.set(true);
 	}
 		
 		
@@ -1169,18 +1187,26 @@ public class MyPluginCommand implements PathCommand {
 	public void setBlue(long[] blue) {
 		this.blue = blue;
 	}
-	
+
 	public final Boolean getTextGrid() {
-	    return textGrid.get();
-	 }
+		return textGrid.get();
+	}
 
-	  public final void setTextGrid(Boolean text) {
-	    this.textGrid.set(text);
-	  }
+	public final void setTextGrid(Boolean text) {
+		this.textGrid.set(text);
+	}
 
-	  public BooleanProperty textGridProperty() {
-	    return textGrid ;
-	  }
+	public BooleanProperty textGridProperty() {
+		return textGrid ;
+	}
+
+	public String getNameEdgeMatrix() {
+		return nameEdgeMatrix;
+	}
+
+	public void setNameEdgeMatrix(String nameEdgeMatrix) {
+		this.nameEdgeMatrix = nameEdgeMatrix;
+	}
 	
 	
 }
