@@ -114,7 +114,8 @@ public class MyPluginCommand implements PathCommand {
 	private Button btnCancel;
 	private int [][]label;
 	private Pane paneCenter;
-	
+	private BooleanProperty isTextGrid ;
+	private BooleanProperty isColorGrid;
 	
 
 	private ComboBox<String> comboBox;
@@ -139,7 +140,7 @@ public class MyPluginCommand implements PathCommand {
 	private long blue[];
 	private boolean drawHist;
 	private long maxValueHistogramm;
-	private BooleanProperty textGrid ;
+	
 	private String nameEdgeMatrix;
 	public static final String NO_OPERATION = "Select";
 	public static final String OPERATION_EROSION = "Erosion";
@@ -152,8 +153,10 @@ public class MyPluginCommand implements PathCommand {
 	public static final String MATRIX_5 = "5er Matrix";
 	public static final String MATRIX_3 = "3er Matrix";
 	
-	
-
+	public static final double RADIUS_1 = 1.0;
+	public static final double RADIUS_2 = 1.5;
+	public static final double RADIUS_3 = 2.0;
+	public static final double RADIUS_4 = 2.7;
 
 
 
@@ -176,7 +179,8 @@ public class MyPluginCommand implements PathCommand {
 		blue =  new long[256];
 		drawHist = true;
 		this.maxValueHistogramm = 0;
-		textGrid = new SimpleBooleanProperty(false);
+		isTextGrid = new SimpleBooleanProperty(false);
+		isColorGrid = new SimpleBooleanProperty(false);
 		this.nameEdgeMatrix = "3er matrix";
 		
 	}
@@ -454,12 +458,12 @@ public class MyPluginCommand implements PathCommand {
 	                	   setSizeBorder(1);
 	                	   cleanGrid();	                	   
 	                	   setNameEdgeMatrix(MATRIX_3);
-	                	   triggerTextGridProperty();
+	                	   triggerIsTextGridProperty();
 	                	   
 	                   }else{
 	                	   setSizeBorder(2);
 	                	   setNameEdgeMatrix(MATRIX_5);
-	                	   triggerTextGridProperty();
+	                	   triggerIsTextGridProperty();
 	                   }
 	               }
 	           }
@@ -481,23 +485,26 @@ public class MyPluginCommand implements PathCommand {
 			drawHist = false;
 			createCenter();
 			setChoiceOperation(OPERATION_EDGE);
-			triggerTextGridProperty();
+			triggerIsTextGridProperty();
 		}
 		else if(selected.contains(OPERATION_GAUSS)){
 			updateViewForNonSelectableOperations();
 			drawHist = false;
 			createCenter();
 			setChoiceOperation(OPERATION_GAUSS);
+			triggerIsTextGridProperty();
 		}
 		else if(selected.contains(OPERATION_DILATATION)){
 			updateViewMorph();
 			createCenter();
 			setChoiceOperation(OPERATION_DILATATION);
+			triggerIsColorGridProperty();
 		}
 		else if(selected.contains(OPERATION_EROSION)){
 			updateViewMorph();
 			createCenter();
 			setChoiceOperation(OPERATION_EROSION);
+			triggerIsColorGridProperty();
 		}
 		else if(selected.contains(OPERATION_BINARY)){
 			updateViewForNonSelectableOperations();
@@ -586,27 +593,23 @@ public class MyPluginCommand implements PathCommand {
 	private void createLeftBorder(){
 		getBtn1().setText("Button 1");
 		getBtn1().setOnAction(actionEvent -> {
-			double radius = 1.0;
-			setKernel(this.createKernel(radius));
-			this.fillGridKernel(kernel);
+			setKernel(this.createKernel(this.RADIUS_1));
+			this.fillGridWithColor();
 		});
 		getBtn2().setText("Button 2");
 		getBtn2().setOnAction(actionEvent -> {
-			double radius = 1.5;
-			setKernel(this.createKernel(radius));
-			this.fillGridKernel(kernel);
+			setKernel(this.createKernel(this.RADIUS_2));
+			this.fillGridWithColor();
 		});
 		getBtn3().setText("Button 3");
 		getBtn3().setOnAction(actionEvent -> {
-			double radius = 2.0;
-			setKernel(this.createKernel(radius));
-			this.fillGridKernel(kernel);
+			setKernel(this.createKernel(this.RADIUS_3));
+			this.fillGridWithColor();
 		});
 		getBtn4().setText("Button 4");
 		getBtn4().setOnAction(actionEvent -> {
-			double radius = 2.7;
-			setKernel(this.createKernel(radius));
-			this.fillGridKernel(getKernel());
+			setKernel(this.createKernel(this.RADIUS_4));
+			this.fillGridWithColor();
 		});
 		getvBoxLeftBorder().setVgrow(btn1, Priority.ALWAYS);
 		getvBoxLeftBorder().setVgrow(btn2, Priority.ALWAYS);
@@ -620,6 +623,34 @@ public class MyPluginCommand implements PathCommand {
 		getvBoxLeftBorder().setPadding(new Insets(10,10,10,10));
 		getRoot().setLeft(getvBoxLeftBorder());
 	}
+	
+	
+	private void fillGridWithColor(){
+		this.getPaneCenter().widthProperty().addListener(e->{
+			this.fillGridKernel(this.getKernel());
+		});
+		this.getPaneCenter().heightProperty().addListener(e->{
+			this.fillGridKernel(this.getKernel());
+		});
+		this.fillGridKernel(this.getKernel());
+
+	}
+
+	//Bei Dilatation und Erosion wird der Kernel mit Farbe auf das Grid gezeichnet 
+	private void fillGridKernel(boolean[][] kernel) {
+		for (int i = 0; i < getGridSize(); i++) {
+			for (int j = 0; j < getGridSize(); j++) {
+				if (getKernel()[i][j] == true) {
+					getRec()[i][j].setFill(Color.RED);
+				} else {
+					getRec()[i][j].setFill(Color.WHITE);
+				}
+			}
+		}
+	}
+	
+	
+	
 	
 	
 	//Hier wird das Grid erstellt
@@ -664,40 +695,29 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	//Bei Dilatation und Erosion wird der Kernel auf das Grid gezeichnet 
-	private void fillGridKernel(boolean[][] kernel) {
-		for (int i = 0; i < getGridSize(); i++) {
-			for (int j = 0; j < getGridSize(); j++) {
-				if (getKernel()[i][j] == true) {
-					getRec()[i][j].setFill(Color.RED);
-				} else {
-					getRec()[i][j].setFill(Color.WHITE);
-				}
-			}
-		}
-	}
+	
+	
+	
 	
 	
 	//Die einzelnen Rechtecke/Panes des Grids werden mit Zahlen befuellt
 	@SuppressWarnings("restriction")
 	private void fillGridWithText(String nameMatrix, String nameOperation){
 		getPaneCenter().widthProperty().addListener(e->{
-			double width = getPaneCenter().getWidth() / getGridSize();
-			textToGrid(nameMatrix, nameOperation, width);
+			textToGrid(nameMatrix, nameOperation);
 		});
 		getPaneCenter().heightProperty().addListener(e->{
-			double width = getPaneCenter().getWidth() / getGridSize();
-			textToGrid(nameMatrix, nameOperation, width);
+			textToGrid(nameMatrix, nameOperation);
 		});
 		double width = getPaneCenter().getWidth() / getGridSize();
-		textToGrid(nameMatrix, nameOperation, width);
+			textToGrid(nameMatrix, nameOperation);
 	}
 	
-	private void textToGrid(String nameMatrix, String nameOperation, double width){
+	private void textToGrid(String nameMatrix, String nameOperation){
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
-				getTextForGrid()[i][j].setX(i *width+17);
-				getTextForGrid()[i][j].setY(j*width+30);
+				getTextForGrid()[i][j].setX(i *getRectangleWidth()+17);
+				getTextForGrid()[i][j].setY(j*getRectangleHeight()+30);
 				getTextForGrid()[i][j].setFont(Font.font ("Verdana", 20));
 				if(nameMatrix.contains(MATRIX_3)&&nameOperation.contains(OPERATION_EDGE))
 					getTextForGrid()[i][j].setText(getlPF3Matrix()[i][j]);
@@ -776,8 +796,6 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	
-	
 	//Wird beim Start des Plugins aufgerufen. Die Gui wird auf default gestellt
 	@SuppressWarnings("restriction")
 	private void setViewToDefault(){
@@ -803,16 +821,20 @@ public class MyPluginCommand implements PathCommand {
 		vBoxLeftBorder = new VBox(15);
 		tGroup = new ToggleGroup();
 		hBox = new HBox();
-		for(int i=0;i<5;i++ ){			//
-			for(int j=0;j<5;j++ ){
+		
+		
+		setKernel(this.createKernel(1.0));
+		for(int i=0;i<getGridSize();i++ ){			//
+			for(int j=0;j<getGridSize();j++ ){
+				System.out.println("Kernel start-> " +getKernel()[j][i]);
 				getTextForGrid()[i][j] = new Text("");
+				getRec()[i][j] = new Rectangle();
 			}
 		}		
-		this.textGridProperty().set(false);	
+		this.isTextGridProperty().set(false);	
 		//Immer wenn die BooleanProperty textGridProperty geandert wird, wird das Grid mit den dazugehörigen zahlen befuellt
 		setNameEdgeMatrix(MATRIX_3);
-		this.textGridProperty().addListener(e->{
-			System.out.println("Betritt Listener");
+		this.isTextGridProperty().addListener(e->{
 				if((getNameEdgeMatrix().contains(MATRIX_3))&&(getChoiceOperation().contains(OPERATION_EDGE)))
 					fillGridWithText(MATRIX_3, getChoiceOperation());
 				else if((getNameEdgeMatrix().contains(MATRIX_5))&&(getChoiceOperation().contains(OPERATION_EDGE)))
@@ -820,14 +842,38 @@ public class MyPluginCommand implements PathCommand {
 				else if((getChoiceOperation().contains(OPERATION_GAUSS)))
 					fillGridWithText(MATRIX_5, getChoiceOperation());
 		});
+		
+		this.isTextGridProperty().set(false);
+		this.isColorGridProperty().addListener(e->{
+			this.fillGridWithColor();
+		});
 	}
 	
+	
+//********************************HILFSFUNKTIONEN******************************************************************
+	
 	//Aendert den boolean  damit die textGridProperty ausgelöst wird
-	private void triggerTextGridProperty(){
-		if(this.getTextGrid()==true)
-			this.textGrid.set(false);
+	private void triggerIsTextGridProperty(){
+		if(this.getIsTextGrid()==true)
+			this.isTextGrid.set(false);
 		else
-			this.textGrid.set(true);
+			this.isTextGrid.set(true);
+	}
+	
+	private void triggerIsColorGridProperty(){
+		if(this.getIsColorGrid()==true)
+			this.isColorGrid.set(false);
+		else
+			this.isColorGrid.set(true);
+	}
+	
+	
+	private double getRectangleWidth(){
+		return getPaneCenter().getWidth() / getGridSize();
+	}
+	
+	private double getRectangleHeight(){
+		return getPaneCenter().getHeight()/getGridSize();
 	}
 		
 		
@@ -1183,18 +1229,7 @@ public class MyPluginCommand implements PathCommand {
 	public void setBlue(long[] blue) {
 		this.blue = blue;
 	}
-
-	public final Boolean getTextGrid() {
-		return textGrid.get();
-	}
-
-	public final void setTextGrid(Boolean text) {
-		this.textGrid.set(text);
-	}
-
-	public BooleanProperty textGridProperty() {
-		return textGrid ;
-	}
+	
 
 	public String getNameEdgeMatrix() {
 		return nameEdgeMatrix;
@@ -1202,6 +1237,30 @@ public class MyPluginCommand implements PathCommand {
 
 	public void setNameEdgeMatrix(String nameEdgeMatrix) {
 		this.nameEdgeMatrix = nameEdgeMatrix;
+	}
+	
+	public final Boolean getIsTextGrid() {
+		return isTextGrid.get();
+	}
+
+	public final void setIsTextGrid(Boolean text) {
+		this.isTextGrid.set(text);
+	}
+
+	public BooleanProperty isTextGridProperty() {
+		return isTextGrid ;
+	}
+	
+	public final Boolean getIsColorGrid() {
+		return isColorGrid.get();
+	}
+
+	public final void setIsColorGrid(Boolean color) {
+		this.isColorGrid.set(color);
+	}
+
+	public BooleanProperty isColorGridProperty() {
+		return isColorGrid ;
 	}
 	
 	
