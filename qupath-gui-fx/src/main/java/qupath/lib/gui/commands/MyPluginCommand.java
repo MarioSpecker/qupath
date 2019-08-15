@@ -242,7 +242,7 @@ public class MyPluginCommand implements PathCommand {
 		case OPERATION_EROSION:
 			//Erosion erhät man wenn man auf ein Binärbild eine inversion durchführt, darauf dann eine Dilatation und
 			//zum Schluss nochmal eine Inversion
-			invertImage(img.getWidth(), img.getHeight(), getArgb());
+			invertImage(getImg().getWidth(), getImg().getHeight(), getArgb());
 			BufferedImage erosionImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] erosionArray = new int[erosionImage.getHeight() * erosionImage.getWidth()];
 			MorphOperations dilatation1 = new Dilatation();
@@ -588,7 +588,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
-	
+	//Linker Rand des BorderPane´s wird hier erstellt
 	@SuppressWarnings("restriction")
 	private void createLeftBorder(){
 		getBtn1().setText("Button 1");
@@ -625,6 +625,7 @@ public class MyPluginCommand implements PathCommand {
 	}
 	
 	
+	//Bei Dilatation und Erosion wird der Kernel mit Farbe auf das Grid gezeichnet
 	private void fillGridWithColor(){
 		this.getPaneCenter().widthProperty().addListener(e->{
 			this.fillGridKernel(this.getKernel());
@@ -633,10 +634,8 @@ public class MyPluginCommand implements PathCommand {
 			this.fillGridKernel(this.getKernel());
 		});
 		this.fillGridKernel(this.getKernel());
-
 	}
 
-	//Bei Dilatation und Erosion wird der Kernel mit Farbe auf das Grid gezeichnet 
 	private void fillGridKernel(boolean[][] kernel) {
 		for (int i = 0; i < getGridSize(); i++) {
 			for (int j = 0; j < getGridSize(); j++) {
@@ -648,9 +647,6 @@ public class MyPluginCommand implements PathCommand {
 			}
 		}
 	}
-	
-	
-	
 	
 	
 	//Hier wird das Grid erstellt
@@ -670,13 +666,12 @@ public class MyPluginCommand implements PathCommand {
 				});
 			pane.widthProperty().addListener(e->{
 				adjustGrid(getPaneCenter().getWidth(), getPaneCenter().getHeight(), size, pane);
-				
 				});			
 		}
 		return pane;
 	}
 	
-	//Grid wird der Graphic angepasst
+	//Grid wird der Graphic angepasst 
 	private void adjustGrid(double widthPane, double heightPane, int size, Pane pane){
 		double width = widthPane / size;
 		double height = heightPane/size;
@@ -693,10 +688,6 @@ public class MyPluginCommand implements PathCommand {
 				getRec()[i][j].setStroke(Color.BLACK);
 				pane.getChildren().addAll(getRec()[i][j],getTextForGrid()[i][j]);}}
 	}
-	
-	
-	
-	
 	
 	
 	
@@ -730,6 +721,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
+	
 	//Das Grid in der GUI wird gelöscht bzw alle Zahlen und Farben gelöscht
 	@SuppressWarnings("restriction")
 	private void cleanGrid(){
@@ -741,7 +733,7 @@ public class MyPluginCommand implements PathCommand {
 		}
 	}
 	
-	
+	// LineChart wird erstellt 
 	public LineChart<String, Number> drawHistogram(){
 		final CategoryAxis xAxis = new CategoryAxis();
 		final NumberAxis yAxis = new NumberAxis();
@@ -762,7 +754,6 @@ public class MyPluginCommand implements PathCommand {
 			seriesRed.getData().add(new XYChart.Data(String.valueOf(i), red[i]));
 			seriesGreen.getData().add(new XYChart.Data(String.valueOf(i), green[i]));
 			seriesBlue.getData().add(new XYChart.Data(String.valueOf(i), blue[i]));
-			
 			if(getMaxValueHistogramm() < getRed()[i]) 
 		         setMaxValueHistogramm(getRed()[i]);
 		    if(getMaxValueHistogramm() < getGreen()[i]) 
@@ -792,7 +783,6 @@ public class MyPluginCommand implements PathCommand {
 				getBlue()[b]++;
 			}
 		}
-	
 	}
 	
 	
@@ -823,15 +813,14 @@ public class MyPluginCommand implements PathCommand {
 		hBox = new HBox();
 		
 		
-		setKernel(this.createKernel(1.0));
+		setKernel(this.createKernel(RADIUS_1));
 		for(int i=0;i<getGridSize();i++ ){			//
 			for(int j=0;j<getGridSize();j++ ){
-				System.out.println("Kernel start-> " +getKernel()[j][i]);
 				getTextForGrid()[i][j] = new Text("");
 				getRec()[i][j] = new Rectangle();
 			}
 		}		
-		this.isTextGridProperty().set(false);	
+	
 		//Immer wenn die BooleanProperty textGridProperty geandert wird, wird das Grid mit den dazugehörigen zahlen befuellt
 		setNameEdgeMatrix(MATRIX_3);
 		this.isTextGridProperty().addListener(e->{
@@ -843,9 +832,9 @@ public class MyPluginCommand implements PathCommand {
 					fillGridWithText(MATRIX_5, getChoiceOperation());
 		});
 		
-		this.isTextGridProperty().set(false);
+
 		this.isColorGridProperty().addListener(e->{
-			this.fillGridWithColor();
+		this.fillGridWithColor();
 		});
 	}
 	
