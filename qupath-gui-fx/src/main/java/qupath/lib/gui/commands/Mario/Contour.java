@@ -12,7 +12,7 @@ public class Contour {
 	private HashMap<Integer,Integer> labelAreaMap;			//Id jedes Objekt mit Flächeninhalt Pixel
 	private HashMap<Integer,ResultPolygon> polyMap;
 	private HashMap<Integer,ArrayList<Integer>> freemanChainMap;
-	private HashMap<Integer, Double> circumferenceMap;
+	private HashMap<Integer, Double> circumferenceMap;		//ID von jedem Object mit Umfang
 	private int[] resultContour;
 	private int imgWidth;
 	private int imgHeight;
@@ -32,61 +32,68 @@ public class Contour {
 		this.twoPassAlgo= new TwoPassAlgo(imgWidth, imgHeight, argb, label);
 		this.polyMap = new HashMap<>();
 		this.labelAreaMap = new HashMap<>();
+		this.circumferenceMap = new HashMap<>();
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
 		this.freemanChainMap = new HashMap<>();
 		this.helperFunctions = new HelperFunctions();
 		this.argb = argb;
-		this.circumferenceMap = new HashMap<>();
+		
 	}
 	
 	
 	
 
-
+	//Hier wird die Hashmap<Integer,ArrayList> mit der ObjectID und der dazugehörigen 
+	//Liste(Werte fuer Himmelsrichtungen 0..7) befuellt.
 	private void createChainForEveryObject(){
 		Iterator hmIterator = polyMap.entrySet().iterator(); 
 		while (hmIterator.hasNext()) { 
-			System.out.println("+++++++++++++++++++Neues Object++++++++++++++++++++");
+			boolean isEnd = false;
 			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
 			int id = (int)mapElement.getKey();
 			ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
 			ArrayList<Integer> chainValueList = new ArrayList<Integer>();
 			for(int i=0;i<rPoly.npoints;i++){
 				if(rPoly.npoints==1){
-					System.out.println("RPoly " + rPoly.npoints);
 					chainValueList.add(i,i);
 					freemanChainMap.put(id, chainValueList);
 					break;
 				}else{
-					if(i<rPoly.npoints-1){
-						int xCurrent= rPoly.xpoints[i];
-						int xNew= rPoly.xpoints[i+1];
-						int x = checkDirection(xCurrent, xNew);
-						int yCurrent= rPoly.ypoints[i];
-						int yNew= rPoly.ypoints[i+1];
-						int y = checkDirection(yCurrent, yNew);
-						chainValueList.add(i,setValueToChain(x, y));
-						//System.out.println(chainValueList.get(i));
-					}
+					if(i<rPoly.npoints-1)
+						addValueToChain(rPoly, i, chainValueList, isEnd);
 					else{
-						int xCurrent= rPoly.xpoints[i];
-						int xNew= rPoly.xpoints[0];
-						int x = checkDirection(xCurrent, xNew);
-						int yCurrent= rPoly.ypoints[i];
-						int yNew= rPoly.ypoints[0];
-						int y = checkDirection(yCurrent, yNew);
-						chainValueList.add(i,setValueToChain(x, y));
+						isEnd = true;
+						addValueToChain(rPoly, i, chainValueList, isEnd);
 						freemanChainMap.put(id, chainValueList);
 					}
 				}
 			}
-			System.out.println("Anzahl Points-> " + rPoly.npoints + "  Anzahl List-> "+chainValueList.size());
 		}
 	}
 	
 	
-	private int setValueToChain(int x, int y){
+	//Werte 0..7 werden hier in Liste eingetragen. Dieser Wert gibt die Richtung von dem naechsten Nachbarpixel wieder
+	private void addValueToChain(ResultPolygon rPoly, int i, ArrayList<Integer> chainValueList, boolean isEnd){
+		int xCurrent= rPoly.xpoints[i];
+		int yCurrent= rPoly.ypoints[i];
+		int xNew, yNew;
+		if(!isEnd){
+			xNew= rPoly.xpoints[i+1];
+			yNew= rPoly.ypoints[i+1];
+		}
+		else
+			xNew= rPoly.xpoints[0];
+			yNew= rPoly.ypoints[0];
+		int x = checkDirection(xCurrent, xNew);
+		int y = checkDirection(yCurrent, yNew);
+		chainValueList.add(i,getValueForChain(x, y));
+	}
+	
+	
+	//Werte 0..7 stellen die Richtungen dar. O -> Osten , 1->Nordosten, 2-> Norden .... . Gibt den
+	//jeweiilgen Wert zurueck
+	private int getValueForChain(int x, int y){
 		int result = 0;
 		if((x==HIGHER_LEVEL)&&(y==SAME_LEVEL))
 			result = 0;
@@ -107,6 +114,7 @@ public class Contour {
 		return result;
 	}
 	
+	//Um zu prüfen ob das nächste Nachbarpixel auf einer tieferen, gleichen oder höhern Spalte/Zeile liegt
 	private int checkDirection(int valueCurrent, int valueNew){
 		int result = 0;
 		if(valueCurrent==valueNew)
@@ -118,8 +126,34 @@ public class Contour {
 		return result;
 	}
 	
+	//Hier wird der Umfang von jedem Object berechnet.
 	private void calculateCircumference(){
-		
+		Iterator hmIterator = getFreemanChainMap().entrySet().iterator(); 
+		while (hmIterator.hasNext()) { 
+			double resultCircumference = 0.0;
+			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+			int id = (int)mapElement.getKey();
+			ArrayList list = (ArrayList)mapElement.getValue();
+			for(int i=0;i<list.size();i++){
+				int value = (int) list.get(i);
+				if(value==0||value==2||value==4||value==6) //Alle Nachbarpixel die horizontal bzw vertical zu ihren 
+					resultCircumference+=1.0;				//vorgaengerpixel liegen haben den Umgang 1
+				else										//Diagonale haben den Wert 1.414
+					resultCircumference+=1.414;
+			}
+			getCircumferenceMap().put(id, resultCircumference);
+		}
+	}
+	
+	//Gibt von jedem Objekt die ID und Umfang aus
+	private void printCircumferenceFromEveryObject(){
+		Iterator hmIterator = getCircumferenceMap().entrySet().iterator(); 
+		while (hmIterator.hasNext()) { 
+			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+			int id = (int)mapElement.getKey();
+			double circumference = (double)mapElement.getValue(); 
+			System.out.println("ObjectID-> "+ id + "  Umfang-> " + circumference);
+		}
 	}
 	
 	
@@ -169,6 +203,8 @@ public class Contour {
 		bTA.searchContourStart(getPolyMap());
 		bTA.decreaseArray();
 		createChainForEveryObject();
+		calculateCircumference();
+		printCircumferenceFromEveryObject();
 	}
 	
 	//Algo um die die einzelnen Objekte zu unterscheiden bzw gibt jedem Objekt eine eigenes Label(ID)
@@ -179,7 +215,23 @@ public class Contour {
 	}
 	
 	
-		
+	public HashMap<Integer, ArrayList<Integer>> getFreemanChainMap() {
+		return freemanChainMap;
+	}
+
+	public void setFreemanChainMap(
+			HashMap<Integer, ArrayList<Integer>> freemanChainMap) {
+		this.freemanChainMap = freemanChainMap;
+	}
+
+	public HashMap<Integer, Double> getCircumferenceMap() {
+		return circumferenceMap;
+	}
+
+	public void setCircumferenceMap(HashMap<Integer, Double> circumferenceMap) {
+		this.circumferenceMap = circumferenceMap;
+	} 
+	
 	public int[][] getLabel() {
 		return label;
 	}
