@@ -42,8 +42,6 @@ public class Contour {
 	}
 	
 	
-	
-
 	//Hier wird die Hashmap<Integer,ArrayList> mit der ObjectID und der dazugehörigen 
 	//Liste(Werte fuer Himmelsrichtungen 0..7) befuellt.
 	private void createChainForEveryObject(){
@@ -75,19 +73,19 @@ public class Contour {
 	
 	//Werte 0..7 werden hier in Liste eingetragen. Dieser Wert gibt die Richtung von dem naechsten Nachbarpixel wieder
 	private void addValueToChain(ResultPolygon rPoly, int i, ArrayList<Integer> chainValueList, boolean isEnd){
-		int xCurrent= rPoly.xpoints[i];
+		int xCurrent= rPoly.xpoints[i];			//X bzw y wert des aktuellen Pixels
 		int yCurrent= rPoly.ypoints[i];
 		int xNew, yNew;
-		if(!isEnd){
+		if(!isEnd){							//Werte des NachbarnPixels
 			xNew= rPoly.xpoints[i+1];
 			yNew= rPoly.ypoints[i+1];
 		}
-		else
+		else								//Werte des NachbarnPixels bzw der Wert wenn man wieder am Startpixel angekommen ist
 			xNew= rPoly.xpoints[0];
 			yNew= rPoly.ypoints[0];
 		int x = checkDirection(xCurrent, xNew);
 		int y = checkDirection(yCurrent, yNew);
-		chainValueList.add(i,getValueForChain(x, y));
+		chainValueList.add(i,getValueForChain(x, y));			//Werte 0..7 werden der Liste hinzugefügt
 	}
 	
 	
