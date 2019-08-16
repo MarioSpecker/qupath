@@ -6,6 +6,7 @@ import qupath.lib.gui.commands.Mario.BinaryImage;
 import qupath.lib.gui.commands.Mario.Contour;
 import qupath.lib.gui.commands.Mario.Dilatation;
 import qupath.lib.gui.commands.Mario.Erosion;
+import qupath.lib.gui.commands.Mario.HelperFunctions;
 import qupath.lib.gui.commands.Mario.TwoPassAlgo;
 import qupath.lib.gui.commands.Mario.interfa.Filter;
 import qupath.lib.gui.commands.Mario.GaussFilter;
@@ -19,6 +20,7 @@ import qupath.lib.plugins.parameters.BooleanParameter;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.shape.Line;
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -29,12 +31,15 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.chart.XYChart.Data;
+
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
 
 import org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSet;
+
 import java.util.Arrays;
 import java.util.Collections;
+
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.BooleanProperty;
 
@@ -140,6 +145,7 @@ public class MyPluginCommand implements PathCommand {
 	private long blue[];
 	private boolean drawHist;
 	private long maxValueHistogramm;
+	private HelperFunctions helperFunftions;
 	
 	private String nameEdgeMatrix;
 	public static final String NO_OPERATION = "Select";
@@ -200,7 +206,7 @@ public class MyPluginCommand implements PathCommand {
 		this.label = new int[getImg().getHeight()][getImg().getWidth()];
 		updatedArray = new int[getImg().getHeight() * getImg().getWidth()];
 		getImg().getRGB(0, 0, getImg().getWidth(), getImg().getHeight(), getArgb(), 0, getImg().getWidth());
-		
+		helperFunftions = new HelperFunctions();
 		
 
 		System.arraycopy(getArgb(), 0, getUpdatedArray(), 0, getArgb().length);
@@ -242,13 +248,13 @@ public class MyPluginCommand implements PathCommand {
 		case OPERATION_EROSION:
 			//Erosion erhät man wenn man auf ein Binärbild eine inversion durchführt, darauf dann eine Dilatation und
 			//zum Schluss nochmal eine Inversion
-			invertImage(getImg().getWidth(), getImg().getHeight(), getArgb());
+			helperFunftions.invertImage(getImg().getWidth(), getImg().getHeight(), getArgb());
 			BufferedImage erosionImage = new BufferedImage(getImg().getWidth() + 4, getImg().getHeight() + 4, BufferedImage.TYPE_INT_ARGB);
 			int[] erosionArray = new int[erosionImage.getHeight() * erosionImage.getWidth()];
 			MorphOperations dilatation1 = new Dilatation();
 			dilatation1.prepareMorphOperation(erosionImage, erosionArray, getArgb(), getImg().getWidth(), getImg().getHeight());
 			dilatation1.executeMorpOperation(erosionImage.getWidth(), erosionImage.getHeight(), erosionArray, getArgb(), getImg().getWidth(), getHalfKernelSize(), getKernel());			
-			invertImage(img.getWidth(), img.getHeight(), getArgb());
+			helperFunftions.invertImage(img.getWidth(), img.getHeight(), getArgb());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
 			break;
 		case OPERATION_GAUSS:
@@ -342,17 +348,7 @@ public class MyPluginCommand implements PathCommand {
 		return k;
 	}
 	
-	public void invertImage(int width, int height, int[] argb){
-		for(int y=0; y<height; y++){
-			for(int x=0; x<width; x++){
-				int pos = y*width+x;
-				if((argb[pos]&0xff)==255)
-					argb[pos] = 0x00000000; 
-				else
-					argb[pos] = 0xffffffff;
-			}
-		}
-	}
+	
 	
 	private boolean isBinary(){
 		for(int y =0; y< getImg().getHeight(); y++){

@@ -38,6 +38,8 @@ public class TwoPassAlgo {
 		
 	}
 	
+	
+	
 
 	public void createFirstStep(){
 		for (int x = 0; x < getImgHeight(); x++) {

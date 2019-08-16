@@ -1,6 +1,7 @@
 package qupath.lib.gui.commands.Mario;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,8 +18,9 @@ public class BoundaryTracingAlgo {
 	private int resizedArrayHeight;
 	private static final int BORDERSIZE = 4;
 	private int[] resultContour;
-	private HashMap<Integer,Integer> labelAreaMap;
-	
+	private HashMap<Integer,Integer> labelAreaMap;		//Id jedes Objekt mit Flächeninhalt Pixel
+
+
 	
 	
 	public BoundaryTracingAlgo(int imgWidth, int imgHeight, int[]argb, int[][] label, HashMap<Integer,Integer> labelAreaMap, int[] resultContour){
@@ -33,6 +35,7 @@ public class BoundaryTracingAlgo {
 		this.contourArray = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
 		this.resizedArrayWidth = imgWidth+BORDERSIZE;
 		this.resizedArrayHeight = imgHeight+BORDERSIZE;
+		
 	}
 
 
@@ -55,6 +58,9 @@ public class BoundaryTracingAlgo {
 			}
 		}
 	}
+	
+	
+	
 	
 	
 		
