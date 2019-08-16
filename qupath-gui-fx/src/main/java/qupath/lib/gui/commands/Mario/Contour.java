@@ -12,6 +12,7 @@ public class Contour {
 	private HashMap<Integer,Integer> labelAreaMap;			//Id jedes Objekt mit Flächeninhalt Pixel
 	private HashMap<Integer,ResultPolygon> polyMap;
 	private HashMap<Integer,ArrayList<Integer>> freemanChainMap;
+	private HashMap<Integer, Double> circumferenceMap;
 	private int[] resultContour;
 	private int imgWidth;
 	private int imgHeight;
@@ -36,6 +37,7 @@ public class Contour {
 		this.freemanChainMap = new HashMap<>();
 		this.helperFunctions = new HelperFunctions();
 		this.argb = argb;
+		this.circumferenceMap = new HashMap<>();
 	}
 	
 	
@@ -53,6 +55,8 @@ public class Contour {
 			for(int i=0;i<rPoly.npoints;i++){
 				if(rPoly.npoints==1){
 					System.out.println("RPoly " + rPoly.npoints);
+					chainValueList.add(i,i);
+					freemanChainMap.put(id, chainValueList);
 					break;
 				}else{
 					if(i<rPoly.npoints-1){
@@ -63,7 +67,7 @@ public class Contour {
 						int yNew= rPoly.ypoints[i+1];
 						int y = checkDirection(yCurrent, yNew);
 						chainValueList.add(i,setValueToChain(x, y));
-						System.out.println(chainValueList.get(i));
+						//System.out.println(chainValueList.get(i));
 					}
 					else{
 						int xCurrent= rPoly.xpoints[i];
@@ -77,8 +81,10 @@ public class Contour {
 					}
 				}
 			}
+			System.out.println("Anzahl Points-> " + rPoly.npoints + "  Anzahl List-> "+chainValueList.size());
 		}
 	}
+	
 	
 	private int setValueToChain(int x, int y){
 		int result = 0;
@@ -110,6 +116,10 @@ public class Contour {
 		else if(valueCurrent>valueNew)
 			result = LOWER_LEVEL;
 		return result;
+	}
+	
+	private void calculateCircumference(){
+		
 	}
 	
 	
