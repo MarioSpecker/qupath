@@ -3,13 +3,18 @@ package qupath.lib.gui.commands.Mario;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+
+import qupath.lib.geom.Point2;
+import qupath.lib.roi.PolygonROI;
+import qupath.lib.roi.interfaces.ROI;
 
 public class Contour {
 
 	
 	private int[][] label;
-	private HashMap<Integer,Integer> labelAreaMap;			//Id jedes Objekt mit Flächeninhalt Pixel
+	private HashMap<Integer,Integer> labelAreaMap;			//Id jedes Objekts mit Flächeninhalt Pixel
 	private HashMap<Integer,ResultPolygon> polyMap;
 	private HashMap<Integer,ArrayList<Integer>> freemanChainMap;
 	private HashMap<Integer, Double> circumferenceMap;		//ID von jedem Object mit Umfang
@@ -23,7 +28,13 @@ public class Contour {
 	private final static int SAME_LEVEL = 0;
 	private final static int LOWER_LEVEL = 1;
 	private final static int HIGHER_LEVEL = 2;
+	private final static double DIAGONAL_LINE = 1.414;
+	private final static double STRAIGHT_LINE = 1.0;
+	List<Point2> points;
 	
+	
+	
+
 	
 	public Contour(int imgWidth, int imgHeight, int[] argb){
 		this.resultContour = new int[imgWidth*imgHeight];
@@ -38,6 +49,7 @@ public class Contour {
 		this.freemanChainMap = new HashMap<>();
 		this.helperFunctions = new HelperFunctions();
 		this.argb = argb;
+		points = new ArrayList<>();
 		
 	}
 	
@@ -135,9 +147,9 @@ public class Contour {
 			for(int i=0;i<list.size();i++){
 				int value = (int) list.get(i);
 				if(value==0||value==2||value==4||value==6) //Alle Nachbarpixel die horizontal bzw vertical zu ihren 
-					resultCircumference+=1.0;				//vorgaengerpixel liegen haben den Umgang 1
+					resultCircumference+=STRAIGHT_LINE;				//vorgaengerpixel liegen haben den Umgang 1
 				else										//Diagonale haben den Wert 1.414
-					resultCircumference+=1.414;
+					resultCircumference+=DIAGONAL_LINE;
 			}
 			getCircumferenceMap().put(id, resultCircumference);
 		}
@@ -177,6 +189,28 @@ public class Contour {
 			}
 		}
 	}
+	
+	
+	@SuppressWarnings("unused")
+	private void toPolygonROI(){
+		Iterator hmIterator = polyMap.entrySet().iterator(); 
+		List<Point2> points = new ArrayList<>();
+		System.out.println("New Object");
+		while (hmIterator.hasNext()) { 
+			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+			int id = (int)mapElement.getKey();
+			ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
+			//ROI roi = new PolygonROI(rPoly.xpoints, rPoly.ypoints, rPoly.npoints, null);
+			for (int i = 0; i < rPoly.npoints; i++) {
+				float x = (float)rPoly.xpoints[i];
+				float y = (float)rPoly.ypoints[i];
+				//float y = (float)convertYfromIJ(polygon.ypoints[i], cal, downsampleFactor);
+				points.add(new Point2(x, y));
+			
+			}
+		}
+	}	
+
 	
 	
 	//Vergleicht die beiden Hashmaps und deren ihr Flächeninhalt miteinander und gibt bei einem Unterschied ein falsch zurueck

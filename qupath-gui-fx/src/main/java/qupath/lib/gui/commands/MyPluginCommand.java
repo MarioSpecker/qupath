@@ -1,12 +1,16 @@
 package qupath.lib.gui.commands;
 
 
+import qupath.lib.geom.Point2;
 import qupath.lib.gui.QuPathGUI;
+import qupath.lib.gui.QuPathGUI.Modes;
 import qupath.lib.gui.commands.Mario.BinaryImage;
 import qupath.lib.gui.commands.Mario.Contour;
 import qupath.lib.gui.commands.Mario.Dilatation;
 import qupath.lib.gui.commands.Mario.Erosion;
 import qupath.lib.gui.commands.Mario.HelperFunctions;
+import qupath.lib.gui.commands.Mario.NearestNeighbor;
+import qupath.lib.gui.commands.Mario.ResultPolygon;
 import qupath.lib.gui.commands.Mario.TwoPassAlgo;
 import qupath.lib.gui.commands.Mario.interfa.Filter;
 import qupath.lib.gui.commands.Mario.GaussFilter;
@@ -17,6 +21,10 @@ import qupath.lib.gui.commands.Mario.interfa.MorphOperations;
 import qupath.lib.gui.commands.interfaces.PathCommand;
 import qupath.lib.gui.helpers.DisplayHelpers;
 import qupath.lib.plugins.parameters.BooleanParameter;
+import qupath.lib.roi.PolygonROI;
+import qupath.lib.roi.interfaces.ROI;
+import qupath.lib.rois.*;//ij.gui.PolygonRoi;
+//import ij.gui.Roi;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.shape.Line;
@@ -35,6 +43,7 @@ import javafx.scene.chart.XYChart.Data;
 import javax.imageio.ImageIO;
 import javax.swing.text.html.ImageView;
 
+import org.apache.commons.math3.complex.Quaternion;
 import org.apache.commons.math3.geometry.euclidean.threed.PolyhedronsSet;
 
 import java.util.Arrays;
@@ -85,6 +94,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.io.ByteArrayInputStream;
 import java.awt.geom.*;
@@ -156,6 +166,7 @@ public class MyPluginCommand implements PathCommand {
 	public static final String OPERATION_EDGE = "Edge";
 	public static final String OPERATION_GREYSCALE = "Greyscale";
 	public static final String OPERATION_CONTOUR = "Contour";
+	public static final String OPERATION_POLYPOINTS = "Polypoints";
 	public static final String MATRIX_5 = "5er Matrix";
 	public static final String MATRIX_3 = "3er Matrix";
 	
@@ -230,7 +241,7 @@ public class MyPluginCommand implements PathCommand {
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
-			break;
+			
 		case OPERATION_GREYSCALE:
 			//Hier wird aus einem Farbbild ein Graustufenbild erzeugt
 			Image greyscale = new GreyscaleImage();
@@ -279,9 +290,16 @@ public class MyPluginCommand implements PathCommand {
 				drawImage(getImg().getHeight(), getImg().getWidth(),c.getResultContour());
 			}
 			break;
-
+		case OPERATION_POLYPOINTS:
+			NearestNeighbor nearestNeighbour = new NearestNeighbor(getImg().getWidth(), getImg().getHeight(), getArgb());
+			break;
+		
+			
 		case NO_OPERATION:
 			break;
+			
+			
+
 		
 		}
 		
@@ -377,6 +395,8 @@ public class MyPluginCommand implements PathCommand {
 		}
 		return true;
 	}
+	
+	
 
 //	public void printKernel(boolean[][] kernel) {
 //		for (boolean[] xS : kernel) {
@@ -436,6 +456,7 @@ public class MyPluginCommand implements PathCommand {
 		getComboBox().getItems().add(OPERATION_DILATATION); 
 		getComboBox().getItems().add(OPERATION_EROSION); 
 		getComboBox().getItems().add(OPERATION_CONTOUR);
+		getComboBox().getItems().add(OPERATION_POLYPOINTS);
 		getComboBox().getSelectionModel().select(0);
 		getComboBox().valueProperty().addListener(new ChangeListener<String>() {
 			@Override public void changed(ObservableValue ov, String old, String selected) {
@@ -489,6 +510,9 @@ public class MyPluginCommand implements PathCommand {
 			createCenter();
 			setChoiceOperation(OPERATION_GAUSS);
 			triggerIsTextGridProperty();
+		}
+		else if(selected.contains(OPERATION_POLYPOINTS)){
+			setChoiceOperation(OPERATION_POLYPOINTS);
 		}
 		else if(selected.contains(OPERATION_DILATATION)){
 			updateViewMorph();

@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 
+import qupath.lib.roi.PolygonROI;
+import qupath.lib.roi.interfaces.ROI;
+
 
 
 
