@@ -241,7 +241,7 @@ public class MyPluginCommand implements PathCommand {
 			Image binary = new BinaryImage();
 			binary.convertImage(getImg().getWidth(), getImg().getHeight(),  getArgb(), getThreshold());
 			drawImage(getImg().getHeight(), getImg().getWidth(), getArgb());
-			
+			break;
 		case OPERATION_GREYSCALE:
 			//Hier wird aus einem Farbbild ein Graustufenbild erzeugt
 			Image greyscale = new GreyscaleImage();
@@ -292,15 +292,13 @@ public class MyPluginCommand implements PathCommand {
 			break;
 		case OPERATION_POLYPOINTS:
 			NearestNeighbor nearestNeighbour = new NearestNeighbor(getImg().getWidth(), getImg().getHeight(), getArgb());
+			nearestNeighbour.z();
 			break;
 		
 			
 		case NO_OPERATION:
 			break;
 			
-			
-
-		
 		}
 		
 	}

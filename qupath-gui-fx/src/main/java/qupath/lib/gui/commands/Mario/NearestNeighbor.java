@@ -15,8 +15,9 @@ public class NearestNeighbor {
 	}
 	
 	
-	private void z(){
-		
+	public void z(){
+		boundingBox.createBoundingBox();
+		System.out.println("Fläche BoundingBox: " +boundingBox.areaBoundingBox());
 	}
 	
 	
