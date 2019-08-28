@@ -1,8 +1,8 @@
 package qupath.lib.gui.commands.Mario;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
+
+import java.util.Collections;
+import java.util.Map.Entry;
 
 public class BoundingBox {
 	
@@ -11,6 +11,8 @@ public class BoundingBox {
 	private int imgHeight;
 	private int xMaxPoint, yMaxPoint, xMinPoint, yMinPoint;
 	private Contour contour;
+	private int lengthBoundingBox;
+	private int widthBoundingBox;
 	
 	public BoundingBox(int imgWidth, int imgHeight, int []argb){
 		this.imgWidth = imgWidth;
@@ -20,18 +22,28 @@ public class BoundingBox {
 	
 	
 	
+	//Hier wird die Länge und Breite der Bounding Box berechnet
+	public void createBoundingBox(){
+		int id = getIdOfLargestPolygon();
+		ResultPolygon rPoly = contour.getPolyMap().get(id);
+		getMinValue(rPoly);
+		getMaxValue(rPoly);
+		setLengthBoundingBox(getYMaxPoint() - getYMinPoint());
+		setWidthBoundingBox(getXMaxPoint() - getXMinPoint());
+	}
 	
-	private void findMinX(){
-		Iterator hmIterator = contour.getPolyMap().entrySet().iterator(); 
-		while (hmIterator.hasNext()) { 
-			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
-			int id = (int)mapElement.getKey();
-			ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
-			
-			
+	//Grösste Polygon wird gesucht -> Sollte das Object sein   (Können mehrere Polygone sein da evtl nicht alle Flächen des Hintergrundes eliminiert wurden)
+	private int getIdOfLargestPolygon(){
+		int id = 0;
+		int maxValueInMap=(Collections.max(contour.getLabelAreaMap().values()));  // This will return max value in the Hashmap
+        for (Entry<Integer, Integer> entry : contour.getLabelAreaMap().entrySet()) {  // Itrate through hashmap
+            if (entry.getValue()==maxValueInMap) 
+                id = entry.getKey();     // Print the key with max value
+        }
+        return id;
 	}
 		
-	
+	//Kleinster Punkt in X und Y Richtung wird ermittelt
 	private void getMinValue(ResultPolygon rPoly) {
 		int minXValue = rPoly.xpoints[0];
 		int minYValue = rPoly.ypoints[0];
@@ -45,7 +57,7 @@ public class BoundingBox {
 		setYMinPoint(minYValue);
 	}
 	
-	
+	//Grösster Punkt in X und Y Richtung wird ermittelt
 	private void getMaxValue(ResultPolygon rPoly) {
 		int maxXValue = rPoly.xpoints[0];
 		int maxYValue = rPoly.ypoints[0];
@@ -57,7 +69,27 @@ public class BoundingBox {
 	    }
 		setXMaxPoint(maxXValue);
 		setYMaxPoint(maxYValue);
-	    
+	}
+	
+	public int areaBoundingBox(){
+		return getWidthBoundingBox() * getLengthBoundingBox();
+	}
+	
+	
+	public int getLengthBoundingBox() {
+		return lengthBoundingBox;
+	}
+
+	public void setLengthBoundingBox(int lengthBoundingBox) {
+		this.lengthBoundingBox = lengthBoundingBox;
+	}
+
+	public int getWidthBoundingBox() {
+		return widthBoundingBox;
+	}
+
+	public void setWidthBoundingBox(int widthBoundingBox) {
+		this.widthBoundingBox = widthBoundingBox;
 	}
 
 

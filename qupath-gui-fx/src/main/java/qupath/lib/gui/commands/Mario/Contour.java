@@ -14,7 +14,7 @@ public class Contour {
 
 	
 	private int[][] label;
-	private HashMap<Integer,Integer> labelAreaMap;			//Id jedes Objekts mit Flächeninhalt Pixel
+	private HashMap<Integer,Integer> labelAreaMap;			//Id jeden Objekts mit Flächeninhalt Pixel
 	private HashMap<Integer,ResultPolygon> polyMap;
 	private HashMap<Integer,ArrayList<Integer>> freemanChainMap;
 	private HashMap<Integer, Double> circumferenceMap;		//ID von jedem Object mit Umfang
