@@ -131,8 +131,6 @@ public class MyPluginCommand implements PathCommand {
 	private Pane paneCenter;
 	private BooleanProperty isTextGrid ;
 	private BooleanProperty isColorGrid;
-	
-
 	private ComboBox<String> comboBox;
 	private RadioButton radioBtn3; 
 	private RadioButton radioBtn5;
@@ -156,6 +154,12 @@ public class MyPluginCommand implements PathCommand {
 	private boolean drawHist;
 	private long maxValueHistogramm;
 	private HelperFunctions helperFunftions;
+	public static final HashMap<Integer,Integer> labelAreaMap = new HashMap<>();			//Id jeden Objekts mit Flächeninhalt Pixel
+	private HashMap<Integer,ResultPolygon> polyMap;
+	private HashMap<Integer,ArrayList<Integer>> freemanChainMap;
+	private HashMap<Integer, Double> circumferenceMap;		//ID von jedem Object mit Umfang
+	
+	
 	
 	private String nameEdgeMatrix;
 	public static final String NO_OPERATION = "Select";
@@ -199,7 +203,10 @@ public class MyPluginCommand implements PathCommand {
 		isTextGrid = new SimpleBooleanProperty(false);
 		isColorGrid = new SimpleBooleanProperty(false);
 		this.nameEdgeMatrix = "3er matrix";
-		
+		this.polyMap = new HashMap<>();
+		//this.labelAreaMap = new HashMap<>();
+		this.circumferenceMap = new HashMap<>();
+		this.freemanChainMap = new HashMap<>();
 	}
 
 	
@@ -283,6 +290,7 @@ public class MyPluginCommand implements PathCommand {
 		
 		case OPERATION_CONTOUR:
 			//Diese Contourverfolgung funktioniert nur bei Anwendung auf ein Binärbild
+			
 			Contour c = new Contour(getImg().getWidth(), getImg().getHeight(), getArgb());
 			c.twoPass();
 			c.pavlidisAlgo();
@@ -291,7 +299,7 @@ public class MyPluginCommand implements PathCommand {
 			}
 			break;
 		case OPERATION_POLYPOINTS:
-			NearestNeighbor nearestNeighbour = new NearestNeighbor(getImg().getWidth(), getImg().getHeight(), getArgb());
+			NearestNeighbor nearestNeighbour = new NearestNeighbor(getImg().getWidth(), getImg().getHeight(), getArgb(), polyMap, labelAreaMap);
 			nearestNeighbour.z();
 			break;
 		
@@ -1269,6 +1277,8 @@ public class MyPluginCommand implements PathCommand {
 	public BooleanProperty isColorGridProperty() {
 		return isColorGrid ;
 	}
+	
+	
 	
 	
 }

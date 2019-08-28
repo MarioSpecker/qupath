@@ -2,6 +2,7 @@ package qupath.lib.gui.commands.Mario;
 
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,25 +13,29 @@ public class BoundingBox {
 	private int imgWidth;
 	private int imgHeight;
 	private int xMaxPoint, yMaxPoint, xMinPoint, yMinPoint;
-	private Contour contour;
+	//private Contour contour;
 	private int lengthBoundingBox;
 	private int widthBoundingBox;
+	int []argb;
+	private HashMap<Integer,Integer> labelAreaMap;			//Id jeden Objekts mit Flächeninhalt Pixel
+	private HashMap<Integer,ResultPolygon> polyMap;
 	
-	public BoundingBox(int imgWidth, int imgHeight, int []argb){
+	
+	public BoundingBox(int imgWidth, int imgHeight, int []argb, HashMap<Integer,ResultPolygon> polyMap,HashMap<Integer,Integer> labelAreaMap ){
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
-		this.contour = new Contour(imgWidth, imgHeight, argb);
+		this.argb = argb;
+		this.argb = argb;
+		this.polyMap = polyMap;
+		this.labelAreaMap = labelAreaMap;
 	}
 	
 	
 	
 	//Hier wird die Länge und Breite der Bounding Box berechnet
 	public void createBoundingBox(){
-		System.out.println(contour.getLabelAreaMap());
 		int id = getIdOfLargestPolygon();
-		System.out.println("id poly" + id);
-		ResultPolygon rPoly = contour.getPolyMap().get(id);
-		System.out.println("Poly Points"+rPoly.npoints);
+		ResultPolygon rPoly = polyMap.get(id);
 		getMinValue(rPoly);
 		getMaxValue(rPoly);
 		setLengthBoundingBox(getYMaxPoint() - getYMinPoint());
@@ -41,11 +46,10 @@ public class BoundingBox {
 	private int getIdOfLargestPolygon(){
 		int area = 0;
 		int polyID = 0;
-		Iterator hmIterator = contour.getPolyMap().entrySet().iterator(); 
+		Iterator hmIterator = polyMap.entrySet().iterator(); 
 		while (hmIterator.hasNext()) { 
 			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
 			int id = (int)mapElement.getKey();
-			System.out.println("ID von allen...." +id);
 			ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
 			if(rPoly.getSizeOfPixel()>area){
 				polyID = id;
@@ -53,13 +57,6 @@ public class BoundingBox {
 			}
 		}
 		return polyID;
-//		int id = 0;
-//		int maxValueInMap=(Collections.max(contour.getLabelAreaMap().values()));  // This will return max value in the Hashmap
-//        for (Entry<Integer, Integer> entry : contour.getLabelAreaMap().entrySet()) {  // Itrate through hashmap
-//            if (entry.getValue()==maxValueInMap) 
-//                id = entry.getKey();     // Print the key with max value
-//        }
-//        return id;
 	}
 		
 	//Kleinster Punkt in X und Y Richtung wird ermittelt
@@ -92,6 +89,7 @@ public class BoundingBox {
 	}
 	
 	public int areaBoundingBox(){
+		System.out.println(getWidthBoundingBox());
 		return getWidthBoundingBox() * getLengthBoundingBox();
 	}
 	

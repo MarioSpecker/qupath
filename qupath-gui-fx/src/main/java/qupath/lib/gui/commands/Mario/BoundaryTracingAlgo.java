@@ -30,7 +30,7 @@ public class BoundaryTracingAlgo {
 		this.argb = argb;
 		this.setLabel(label);
 		this.resultContour = resultContour;
-		this.setLabelAreaMap(labelAreaMap);
+		this.labelAreaMap = labelAreaMap;
 		this.resizedArrayWithLabels = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
 		this.contourArray = new int[(imgHeight+BORDERSIZE)*(imgWidth+BORDERSIZE)];
 		this.resizedArrayWidth = imgWidth+BORDERSIZE;
@@ -255,15 +255,15 @@ public class BoundaryTracingAlgo {
 			this.resizedArrayHeight = resizedArrayHeight;
 		}
 
-
-		public HashMap<Integer,Integer> getLabelAreaMap() {
-			return labelAreaMap;
-		}
-
-
-		public void setLabelAreaMap(HashMap<Integer,Integer> labelAreaMap) {
-			this.labelAreaMap = labelAreaMap;
-		}
+//
+//		public HashMap<Integer,Integer> getLabelAreaMap() {
+//			return labelAreaMap;
+//		}
+//
+//
+//		public void setLabelAreaMap(HashMap<Integer,Integer> labelAreaMap) {
+//			this.labelAreaMap = labelAreaMap;
+//		}
 
 
 		
