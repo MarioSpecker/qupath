@@ -9,6 +9,7 @@ import qupath.lib.gui.commands.Mario.Contour;
 import qupath.lib.gui.commands.Mario.Dilatation;
 import qupath.lib.gui.commands.Mario.Erosion;
 import qupath.lib.gui.commands.Mario.HelperFunctions;
+import qupath.lib.gui.commands.Mario.MapManager;
 import qupath.lib.gui.commands.Mario.NearestNeighbor;
 import qupath.lib.gui.commands.Mario.ResultPolygon;
 import qupath.lib.gui.commands.Mario.TwoPassAlgo;
@@ -154,10 +155,7 @@ public class MyPluginCommand implements PathCommand {
 	private boolean drawHist;
 	private long maxValueHistogramm;
 	private HelperFunctions helperFunftions;
-	public static final HashMap<Integer,Integer> labelAreaMap = new HashMap<>();			//Id jeden Objekts mit Flächeninhalt Pixel
-	private HashMap<Integer,ResultPolygon> polyMap;
-	private HashMap<Integer,ArrayList<Integer>> freemanChainMap;
-	private HashMap<Integer, Double> circumferenceMap;		//ID von jedem Object mit Umfang
+
 	
 	
 	
@@ -203,10 +201,7 @@ public class MyPluginCommand implements PathCommand {
 		isTextGrid = new SimpleBooleanProperty(false);
 		isColorGrid = new SimpleBooleanProperty(false);
 		this.nameEdgeMatrix = "3er matrix";
-		this.polyMap = new HashMap<>();
-		//this.labelAreaMap = new HashMap<>();
-		this.circumferenceMap = new HashMap<>();
-		this.freemanChainMap = new HashMap<>();
+		
 	}
 
 	
@@ -290,17 +285,19 @@ public class MyPluginCommand implements PathCommand {
 		
 		case OPERATION_CONTOUR:
 			//Diese Contourverfolgung funktioniert nur bei Anwendung auf ein Binärbild
+			MapManager mapManger = new MapManager();
+			Contour c = new Contour(getImg().getWidth(), getImg().getHeight(), getArgb(), mapManger);
 			
-			Contour c = new Contour(getImg().getWidth(), getImg().getHeight(), getArgb());
-			c.twoPass();
+			//c.twoPass();
 			c.pavlidisAlgo();
-			if(c.compareSizeOfArea()){
+			//System.out.println("In der Main " + mapManger.getPolyMap());
+			//if(c.compareSizeOfArea()){
 				drawImage(getImg().getHeight(), getImg().getWidth(),c.getResultContour());
-			}
+			//}
 			break;
 		case OPERATION_POLYPOINTS:
-			NearestNeighbor nearestNeighbour = new NearestNeighbor(getImg().getWidth(), getImg().getHeight(), getArgb(), polyMap, labelAreaMap);
-			nearestNeighbour.z();
+//			NearestNeighbor nearestNeighbour = new NearestNeighbor(getImg().getWidth(), getImg().getHeight(), getArgb(), polyMap, labelAreaMap);
+//			nearestNeighbour.z();
 			break;
 		
 			

@@ -1,24 +1,15 @@
 package qupath.lib.gui.commands.Mario;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
-import qupath.lib.geom.Point2;
-import qupath.lib.gui.commands.MyPluginCommand;
-import qupath.lib.roi.PolygonROI;
-import qupath.lib.roi.interfaces.ROI;
+
 
 public class Contour {
 
 	
 	private int[][] label;
-	private HashMap<Integer,Integer> labelAreaMap;			//Id jedes Objekt mit Flächeninhalt Pixel
-	private HashMap<Integer,ResultPolygon> polyMap;
-	private HashMap<Integer,ArrayList<Integer>> freemanChainMap;
-	private HashMap<Integer, Double> circumferenceMap;		//ID von jedem Object mit Umfang
 	private int[] resultContour;
 	private int imgWidth;
 	private int imgHeight;
@@ -30,19 +21,18 @@ public class Contour {
 	private final static int LOWER_LEVEL = 1;
 	private final static int HIGHER_LEVEL = 2;
 	private final static double STRAIGHT_LINE = 1.0;
-	private final static double DIAGONAL_LINE = 1.0;
+	private final static double DIAGONAL_LINE = 1.414;
+	private MapManager mapManager;
 	
-	public Contour(int imgWidth, int imgHeight, int[] argb){
+	
+	public Contour(int imgWidth, int imgHeight, int[] argb, MapManager mm){
+		this.mapManager = mm;
 		this.resultContour = new int[imgWidth*imgHeight];
 		this.label= new int[imgHeight][imgWidth];
-		this.bTA = new BoundaryTracingAlgo(imgWidth, imgHeight, argb, label, labelAreaMap, resultContour);
+		this.bTA = new BoundaryTracingAlgo(imgWidth, imgHeight, argb, label, resultContour, mm);
 		this.twoPassAlgo= new TwoPassAlgo(imgWidth, imgHeight, argb, label);
-		this.polyMap = new HashMap<>();
-		this.labelAreaMap = new HashMap<>();
-		this.circumferenceMap = new HashMap<>();
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
-		this.freemanChainMap = new HashMap<>();
 		this.helperFunctions = new HelperFunctions();
 		this.argb = argb;
 		
@@ -52,7 +42,7 @@ public class Contour {
 	//Hier wird die Hashmap<Integer,ArrayList> mit der ObjectID und der dazugehörigen 
 	//Liste(Werte fuer Himmelsrichtungen 0..7) befuellt.
 	private void createChainForEveryObject(){
-		Iterator hmIterator = polyMap.entrySet().iterator(); 
+		Iterator hmIterator = mapManager.getPolyMap().entrySet().iterator(); 
 		while (hmIterator.hasNext()) { 
 			boolean isEnd = false;
 			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
@@ -62,7 +52,7 @@ public class Contour {
 			for(int i=0;i<rPoly.npoints;i++){
 				if(rPoly.npoints==1){
 					chainValueList.add(i,i);
-					freemanChainMap.put(id, chainValueList);
+					mapManager.getFreemanChainMap().put(id, chainValueList);
 					break;
 				}else{
 					if(i<rPoly.npoints-1)
@@ -70,7 +60,7 @@ public class Contour {
 					else{
 						isEnd = true;
 						addValueToChain(rPoly, i, chainValueList, isEnd);
-						freemanChainMap.put(id, chainValueList);
+						mapManager.getFreemanChainMap().put(id, chainValueList);
 					}
 				}
 			}
@@ -90,70 +80,70 @@ public class Contour {
 		}
 		else								//Werte des NachbarnPixels bzw der Wert wenn man wieder am Startpixel angekommen ist
 			xNew= rPoly.xpoints[0];
-			yNew= rPoly.ypoints[0];
+		yNew= rPoly.ypoints[0];
 		int x = checkDirection(xCurrent, xNew);
 		int y = checkDirection(yCurrent, yNew);
 		chainValueList.add(i,getValueForChain(x, y));			//Werte 0..7 werden der Liste hinzugefügt
 	}
-	
-	
+
+
 	//Werte 0..7 stellen die Richtungen dar. O -> Osten , 1->Nordosten, 2-> Norden .... . Gibt den
-		//jeweiilgen Wert zurueck
-		private int getValueForChain(int x, int y){
-			int result = 0;
-			if((x==HIGHER_LEVEL)&&(y==SAME_LEVEL))
-				result = 0;
-			else if((x==HIGHER_LEVEL)&&(y==LOWER_LEVEL))
-				result =1;
-			else if((x==SAME_LEVEL)&&(y==LOWER_LEVEL))
-				result =2;
-			else if((x==LOWER_LEVEL)&&(y==LOWER_LEVEL))
-				result =3;
-			else if((x==LOWER_LEVEL)&&(y==SAME_LEVEL))
-				result =4;
-			else if((x==LOWER_LEVEL)&&(y==HIGHER_LEVEL))
-				result =5;
-			else if((x==SAME_LEVEL)&&(y==HIGHER_LEVEL))
-				result =6;
-			else if((x==HIGHER_LEVEL)&&(y==HIGHER_LEVEL))
-				result =7;
-			return result;
-		}
-		
-		//Um zu prüfen ob das nächste Nachbarpixel auf einer tieferen, gleichen oder höhern Spalte/Zeile liegt
-		private int checkDirection(int valueCurrent, int valueNew){
-			int result = 0;
-			if(valueCurrent==valueNew)
-				result = SAME_LEVEL;
-			else if(valueCurrent<valueNew)
-				result = HIGHER_LEVEL;
-			else if(valueCurrent>valueNew)
-				result = LOWER_LEVEL;
-			return result;
-		}
-		
-		//Hier wird der Umfang von jedem Object berechnet.
-		private void calculateCircumference(){
-			Iterator hmIterator = getFreemanChainMap().entrySet().iterator(); 
-			while (hmIterator.hasNext()) { 
-				double resultCircumference = 0.0;
-				Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
-				int id = (int)mapElement.getKey();
-				ArrayList list = (ArrayList)mapElement.getValue();
-				for(int i=0;i<list.size();i++){
-					int value = (int) list.get(i);
-					if(value==0||value==2||value==4||value==6) //Alle Nachbarpixel die horizontal bzw vertical zu ihren 
-						resultCircumference+=1.0;				//vorgaengerpixel liegen haben den Umgang 1
-					else										//Diagonale haben den Wert 1.414
-						resultCircumference+=1.414;
-				}
-				getCircumferenceMap().put(id, resultCircumference);
+	//jeweiilgen Wert zurueck
+	private int getValueForChain(int x, int y){
+		int result = 0;
+		if((x==HIGHER_LEVEL)&&(y==SAME_LEVEL))
+			result = 0;
+		else if((x==HIGHER_LEVEL)&&(y==LOWER_LEVEL))
+			result =1;
+		else if((x==SAME_LEVEL)&&(y==LOWER_LEVEL))
+			result =2;
+		else if((x==LOWER_LEVEL)&&(y==LOWER_LEVEL))
+			result =3;
+		else if((x==LOWER_LEVEL)&&(y==SAME_LEVEL))
+			result =4;
+		else if((x==LOWER_LEVEL)&&(y==HIGHER_LEVEL))
+			result =5;
+		else if((x==SAME_LEVEL)&&(y==HIGHER_LEVEL))
+			result =6;
+		else if((x==HIGHER_LEVEL)&&(y==HIGHER_LEVEL))
+			result =7;
+		return result;
+	}
+
+	//Um zu prüfen ob das nächste Nachbarpixel auf einer tieferen, gleichen oder höhern Spalte/Zeile liegt
+	private int checkDirection(int valueCurrent, int valueNew){
+		int result = 0;
+		if(valueCurrent==valueNew)
+			result = SAME_LEVEL;
+		else if(valueCurrent<valueNew)
+			result = HIGHER_LEVEL;
+		else if(valueCurrent>valueNew)
+			result = LOWER_LEVEL;
+		return result;
+	}
+
+	//Hier wird der Umfang von jedem Object berechnet.
+	private void calculateCircumference(){
+		Iterator hmIterator = mapManager.getFreemanChainMap().entrySet().iterator(); 
+		while (hmIterator.hasNext()) { 
+			double resultCircumference = 0.0;
+			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+			int id = (int)mapElement.getKey();
+			ArrayList list = (ArrayList)mapElement.getValue();
+			for(int i=0;i<list.size();i++){
+				int value = (int) list.get(i);
+				if(value==0||value==2||value==4||value==6) //Alle Nachbarpixel die horizontal bzw vertical zu ihren 
+					resultCircumference+=STRAIGHT_LINE;				//vorgaengerpixel liegen haben den Umgang 1
+				else										//Diagonale haben den Wert 1.414
+					resultCircumference+=DIAGONAL_LINE;
 			}
+			mapManager.getCircumferenceMap().put(id, resultCircumference);
 		}
+	}
 		
 		//Gibt von jedem Objekt die ID und Umfang aus
 		private void printCircumferenceFromEveryObject(){
-			Iterator hmIterator = getCircumferenceMap().entrySet().iterator(); 
+			Iterator hmIterator = mapManager.getCircumferenceMap().entrySet().iterator(); 
 			while (hmIterator.hasNext()) { 
 				Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
 				int id = (int)mapElement.getKey();
@@ -163,33 +153,50 @@ public class Contour {
 		}
 		
 		
-		
-		
 		//geht jedes einzelene Pixel von dem Label durch und zaehlt so den Flächeninhalt in Pixel
 		private void countPixelFromEachLabel(){
 			for(int y = 0;y<getImgHeight();y++){
 				for(int x = 0;x<getImgWidth();x++){
 					int pixValue= getLabel()[y][x];
-					if(getLabelAreaMap().containsKey(pixValue)){
-						int sizePixel = getLabelAreaMap().get(pixValue);
-						getLabelAreaMap().put(pixValue, sizePixel+1);
+					if(mapManager.getLabelAreaMap().containsKey(pixValue)){
+						int sizePixel = mapManager.getLabelAreaMap().get(pixValue);
+						mapManager.getLabelAreaMap().put(pixValue, sizePixel+1);
 					}else{
-						getLabelAreaMap().put(pixValue, 1);
+						mapManager.getLabelAreaMap().put(pixValue, 1);
 					}
 				}
 			}
 		}
 		
+//		private void printLabelMatrix(){
+//			for(int y = 0;y<getImgHeight();y++){
+//				for(int x = 0;x<getImgWidth();x++){
+//					int pixValue= getLabel()[y][x];
+//					System.out.print(pixValue);
+//				}
+//				System.out.println("");
+//			}
+//			
+//		}
+		
 		
 		//Vergleicht die beiden Hashmaps und deren ihr Flächeninhalt miteinander und gibt bei einem Unterschied ein falsch zurueck
 		//ansonsten true.....
 		public boolean compareSizeOfArea() {
-			Iterator it = labelAreaMap.entrySet().iterator();
+			Iterator hmIterator = mapManager.getPolyMap().entrySet().iterator(); 
+			while (hmIterator.hasNext()) { 
+		    	Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+				int id = (int)mapElement.getKey();
+				ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
+				System.out.println("CompareSize   ID->" +id +" rpoly-> " +rPoly.getSizeOfPixel());
+			}
+			Iterator it = mapManager.getLabelAreaMap().entrySet().iterator();
 		    while (it.hasNext()) {
 		    	Map.Entry pair = (Map.Entry)it.next();
 		    	int id = (int)pair.getKey();
-		    	System.out.println("Label Area Map" +labelAreaMap);
-		    	if(labelAreaMap.get(id)!=polyMap.get(id).sizeOfPixel){
+		    	System.out.println("Label Area Map" +mapManager.getLabelAreaMap());
+		    	System.out.println("Warum?????" + mapManager.getPolyMap());
+		    	if(mapManager.getLabelAreaMap().get(id)!=mapManager.getPolyMap().get(id).sizeOfPixel){
 		    		System.out.println("false");
 		    		return false;
 		    	}
@@ -200,17 +207,22 @@ public class Contour {
 		
 		//Algo fuer die Darstellung der Kontur
 		public void pavlidisAlgo(){
-			bTA.labelToArray();
-			bTA.searchContourStart(getPolyMap());
+			
+			//bTA.labelToArray();
+			bTA.fillArgbResizedArray();
+			bTA.searchContourStart(mapManager.getPolyMap());
 			bTA.decreaseArray();
 			countPixelFromEachLabel();
 			createChainForEveryObject();
 			calculateCircumference();
+			//printLabelMatrix();
 			printCircumferenceFromEveryObject();
+			
 		}
 		
 		//Algo um die die einzelnen Objekte zu unterscheiden bzw gibt jedem Objekt eine eigenes Label(ID)
 		public void twoPass(){
+			//System.arraycopy( argb, 0, argbCopy, 0, argb.length );
 			helperFunctions.invertImage(getImgWidth(), getImgHeight(), getArgb());
 			twoPassAlgo.createFirstStep();
 			twoPassAlgo.createSecondStep();
@@ -218,37 +230,15 @@ public class Contour {
 		}
 		
 		
-		public HashMap<Integer, ArrayList<Integer>> getFreemanChainMap() {
-			return freemanChainMap;
-		}
-		public void setFreemanChainMap(
-				HashMap<Integer, ArrayList<Integer>> freemanChainMap) {
-			this.freemanChainMap = freemanChainMap;
-		}
-		public HashMap<Integer, Double> getCircumferenceMap() {
-			return circumferenceMap;
-		}
-		public void setCircumferenceMap(HashMap<Integer, Double> circumferenceMap) {
-			this.circumferenceMap = circumferenceMap;
-		} 
+		
+		
+//*************************************************Getter / Setter*****************************************************
 		
 		public int[][] getLabel() {
 			return label;
 		}
 		public void setLabel(int[][] label) {
 			this.label = label;
-		}
-		public HashMap<Integer, Integer> getLabelAreaMap() {
-			return labelAreaMap;
-		}
-		public void setLabelAreaMap(HashMap<Integer, Integer> labelAreaMap) {
-			this.labelAreaMap = labelAreaMap;
-		}
-		public HashMap<Integer, ResultPolygon> getPolyMap() {
-			return polyMap;
-		}
-		public void setPolyMap(HashMap<Integer, ResultPolygon> polyMap) {
-			this.polyMap = polyMap;
 		}
 		
 		public int[] getResultContour() {

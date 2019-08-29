@@ -7,15 +7,16 @@ public class NearestNeighbor {
 	
 	int imgWidth;
 	int imgHeight;
+	private MapManager mapManager;
 	private BoundingBox boundingBox;
-	private HashMap<Integer,Integer> labelAreaMap;			//Id jeden Objekts mit Flächeninhalt Pixel
-	private HashMap<Integer,ResultPolygon> polyMap;
 	
 	
-	public NearestNeighbor(int imgWidth, int imgHeight, int[] argb, HashMap<Integer,ResultPolygon> polyMap,HashMap<Integer,Integer> labelAreaMap){
+	
+	public NearestNeighbor(int imgWidth, int imgHeight, int[] argb, MapManager mm){
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
-		this.boundingBox = new BoundingBox(imgWidth, imgHeight, argb, polyMap, labelAreaMap);
+		this.mapManager = mm;
+		this.boundingBox = new BoundingBox(imgWidth, imgHeight, argb, mm);
 	}
 	
 	

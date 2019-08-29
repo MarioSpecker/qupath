@@ -13,21 +13,18 @@ public class BoundingBox {
 	private int imgWidth;
 	private int imgHeight;
 	private int xMaxPoint, yMaxPoint, xMinPoint, yMinPoint;
-	//private Contour contour;
 	private int lengthBoundingBox;
 	private int widthBoundingBox;
 	int []argb;
-	private HashMap<Integer,Integer> labelAreaMap;			//Id jeden Objekts mit Flächeninhalt Pixel
-	private HashMap<Integer,ResultPolygon> polyMap;
+	private MapManager mapManager;
 	
 	
-	public BoundingBox(int imgWidth, int imgHeight, int []argb, HashMap<Integer,ResultPolygon> polyMap,HashMap<Integer,Integer> labelAreaMap ){
+	
+	public BoundingBox(int imgWidth, int imgHeight, int []argb, MapManager mm ){
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
 		this.argb = argb;
-		this.argb = argb;
-		this.polyMap = polyMap;
-		this.labelAreaMap = labelAreaMap;
+		this.mapManager = mm;
 	}
 	
 	
@@ -35,7 +32,7 @@ public class BoundingBox {
 	//Hier wird die Länge und Breite der Bounding Box berechnet
 	public void createBoundingBox(){
 		int id = getIdOfLargestPolygon();
-		ResultPolygon rPoly = polyMap.get(id);
+		ResultPolygon rPoly = mapManager.getPolyMap().get(id);
 		getMinValue(rPoly);
 		getMaxValue(rPoly);
 		setLengthBoundingBox(getYMaxPoint() - getYMinPoint());
@@ -46,7 +43,7 @@ public class BoundingBox {
 	private int getIdOfLargestPolygon(){
 		int area = 0;
 		int polyID = 0;
-		Iterator hmIterator = polyMap.entrySet().iterator(); 
+		Iterator hmIterator = mapManager.getPolyMap().entrySet().iterator(); 
 		while (hmIterator.hasNext()) { 
 			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
 			int id = (int)mapElement.getKey();
@@ -61,7 +58,6 @@ public class BoundingBox {
 		
 	//Kleinster Punkt in X und Y Richtung wird ermittelt
 	private void getMinValue(ResultPolygon rPoly) {
-		
 		int minXValue = rPoly.xpoints[0];
 		int minYValue = rPoly.ypoints[0];
 		for(int i=0;i<rPoly.npoints;i++){	    
@@ -94,6 +90,7 @@ public class BoundingBox {
 	}
 	
 	
+	//*******************************************Getter / Setter**********************************************
 	public int getLengthBoundingBox() {
 		return lengthBoundingBox;
 	}
