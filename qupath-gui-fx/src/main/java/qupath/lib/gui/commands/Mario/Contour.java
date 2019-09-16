@@ -140,130 +140,119 @@ public class Contour {
 			mapManager.getCircumferenceMap().put(id, resultCircumference);
 		}
 	}
-		
-		//Gibt von jedem Objekt die ID und Umfang aus
-		private void printCircumferenceFromEveryObject(){
-			Iterator hmIterator = mapManager.getCircumferenceMap().entrySet().iterator(); 
-			while (hmIterator.hasNext()) { 
-				Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
-				int id = (int)mapElement.getKey();
-				double circumference = (double)mapElement.getValue(); 
-				System.out.println("ObjectID-> "+ id + "  Umfang-> " + circumference);
-			}
+
+	//Gibt von jedem Objekt die ID und Umfang aus
+	private void printCircumferenceFromEveryObject(){
+		Iterator hmIterator = mapManager.getCircumferenceMap().entrySet().iterator(); 
+		while (hmIterator.hasNext()) { 
+			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+			int id = (int)mapElement.getKey();
+			double circumference = (double)mapElement.getValue(); 
+			System.out.println("ObjectID-> "+ id + "  Umfang-> " + circumference);
 		}
-		
-		
-		//geht jedes einzelene Pixel von dem Label durch und zaehlt so den Flächeninhalt in Pixel
-		private void countPixelFromEachLabel(){
-			for(int y = 0;y<getImgHeight();y++){
-				for(int x = 0;x<getImgWidth();x++){
-					int pixValue= getLabel()[y][x];
-					if(mapManager.getLabelAreaMap().containsKey(pixValue)){
-						int sizePixel = mapManager.getLabelAreaMap().get(pixValue);
-						mapManager.getLabelAreaMap().put(pixValue, sizePixel+1);
-					}else{
-						mapManager.getLabelAreaMap().put(pixValue, 1);
-					}
+	}
+
+
+	//geht jedes einzelene Pixel von dem Label durch und zaehlt so den Flächeninhalt in Pixel
+	private void countPixelFromEachLabel(){
+		for(int y = 0;y<getImgHeight();y++){
+			for(int x = 0;x<getImgWidth();x++){
+				int pixValue= getLabel()[y][x];
+				if(mapManager.getLabelAreaMap().containsKey(pixValue)){
+					int sizePixel = mapManager.getLabelAreaMap().get(pixValue);
+					mapManager.getLabelAreaMap().put(pixValue, sizePixel+1);
+				}else{
+					mapManager.getLabelAreaMap().put(pixValue, 1);
 				}
 			}
 		}
-		
-//		private void printLabelMatrix(){
-//			for(int y = 0;y<getImgHeight();y++){
-//				for(int x = 0;x<getImgWidth();x++){
-//					int pixValue= getLabel()[y][x];
-//					System.out.print(pixValue);
-//				}
-//				System.out.println("");
-//			}
-//			
-//		}
-		
-		
-		//Vergleicht die beiden Hashmaps und deren ihr Flächeninhalt miteinander und gibt bei einem Unterschied ein falsch zurueck
-		//ansonsten true.....
-		public boolean compareSizeOfArea() {
-			Iterator hmIterator = mapManager.getPolyMap().entrySet().iterator(); 
-			while (hmIterator.hasNext()) { 
-		    	Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
-				int id = (int)mapElement.getKey();
-				ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
-				System.out.println("CompareSize   ID->" +id +" rpoly-> " +rPoly.getSizeOfPixel());
+	}
+
+	
+	//Vergleicht die beiden Hashmaps und deren ihr Flächeninhalt miteinander und gibt bei einem Unterschied ein falsch zurueck
+	//ansonsten true.....
+	public boolean compareSizeOfArea() {
+		Iterator hmIterator = mapManager.getPolyMap().entrySet().iterator(); 
+		while (hmIterator.hasNext()) { 
+			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
+			int id = (int)mapElement.getKey();
+			ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
+			System.out.println("CompareSize   ID->" +id +" rpoly-> " +rPoly.getSizeOfPixel());
+		}
+		Iterator it = mapManager.getLabelAreaMap().entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry pair = (Map.Entry)it.next();
+			int id = (int)pair.getKey();
+			System.out.println("Label Area Map" +mapManager.getLabelAreaMap());
+			System.out.println("Warum?????" + mapManager.getPolyMap());
+			if(mapManager.getLabelAreaMap().get(id)!=mapManager.getPolyMap().get(id).sizeOfPixel){
+				System.out.println("false");
+				return false;
 			}
-			Iterator it = mapManager.getLabelAreaMap().entrySet().iterator();
-		    while (it.hasNext()) {
-		    	Map.Entry pair = (Map.Entry)it.next();
-		    	int id = (int)pair.getKey();
-		    	System.out.println("Label Area Map" +mapManager.getLabelAreaMap());
-		    	System.out.println("Warum?????" + mapManager.getPolyMap());
-		    	if(mapManager.getLabelAreaMap().get(id)!=mapManager.getPolyMap().get(id).sizeOfPixel){
-		    		System.out.println("false");
-		    		return false;
-		    	}
-		    }
-		    return true;
 		}
-		
-		
-		//Algo fuer die Darstellung der Kontur
-		public void pavlidisAlgo(){
-			
-			//bTA.labelToArray();
-			bTA.fillArgbResizedArray();
-			bTA.searchContourStart(mapManager.getPolyMap());
-			bTA.decreaseArray();
-			countPixelFromEachLabel();
-			createChainForEveryObject();
-			calculateCircumference();
-			//printLabelMatrix();
-			printCircumferenceFromEveryObject();
-			
-		}
-		
-		//Algo um die die einzelnen Objekte zu unterscheiden bzw gibt jedem Objekt eine eigenes Label(ID)
-		public void twoPass(){
-			//System.arraycopy( argb, 0, argbCopy, 0, argb.length );
-			helperFunctions.invertImage(getImgWidth(), getImgHeight(), getArgb());
-			twoPassAlgo.createFirstStep();
-			twoPassAlgo.createSecondStep();
-			
-		}
+		return true;
+	}
+
+
+	//Algo fuer die Darstellung der Kontur
+	public void pavlidisAlgo(){
+
+		//bTA.labelToArray();
+		bTA.fillArgbResizedArray();
+		bTA.searchContourStart(mapManager.getPolyMap());
+		bTA.decreaseArray();
+		countPixelFromEachLabel();
+		createChainForEveryObject();
+		calculateCircumference();
+		//printLabelMatrix();
+		printCircumferenceFromEveryObject();
+
+	}
+
+	//Algo um die die einzelnen Objekte zu unterscheiden bzw gibt jedem Objekt eine eigenes Label(ID)
+	public void twoPass(){
+		//System.arraycopy( argb, 0, argbCopy, 0, argb.length );
+		helperFunctions.invertImage(getImgWidth(), getImgHeight(), getArgb());
+		twoPassAlgo.createFirstStep();
+		twoPassAlgo.createSecondStep();
+
+	}
 		
 		
 		
 		
 //*************************************************Getter / Setter*****************************************************
-		
-		public int[][] getLabel() {
-			return label;
-		}
-		public void setLabel(int[][] label) {
-			this.label = label;
-		}
-		
-		public int[] getResultContour() {
-			return resultContour;
-		}
-		public void setResultContour(int[] resultContour) {
-			this.resultContour = resultContour;
-		}
-		public int getImgWidth() {
-			return imgWidth;
-		}
-		public void setImgWidth(int imgWidth) {
-			this.imgWidth = imgWidth;
-		}
-		public int getImgHeight() {
-			return imgHeight;
-		}
-		public void setImgHeight(int imgHeight) {
-			this.imgHeight = imgHeight;
-		}
-		
-		public int[] getArgb() {
-			return argb;
-		}
-		public void setArgb(int[] argb) {
-			this.argb = argb;
-		}
+
+	public int[][] getLabel() {
+		return label;
 	}
+	public void setLabel(int[][] label) {
+		this.label = label;
+	}
+
+	public int[] getResultContour() {
+		return resultContour;
+	}
+	public void setResultContour(int[] resultContour) {
+		this.resultContour = resultContour;
+	}
+	public int getImgWidth() {
+		return imgWidth;
+	}
+	public void setImgWidth(int imgWidth) {
+		this.imgWidth = imgWidth;
+	}
+	public int getImgHeight() {
+		return imgHeight;
+	}
+	public void setImgHeight(int imgHeight) {
+		this.imgHeight = imgHeight;
+	}
+
+	public int[] getArgb() {
+		return argb;
+	}
+	public void setArgb(int[] argb) {
+		this.argb = argb;
+	}
+}

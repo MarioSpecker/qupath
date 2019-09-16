@@ -30,7 +30,6 @@ public class BoundaryTracingAlgo {
 	
 	
 	public BoundaryTracingAlgo(int imgWidth, int imgHeight, int[]argb, int[][] label, int[] resultContour, MapManager mm){
-		
 		this.imgWidth = imgWidth;
 		this.imgHeight = imgHeight;
 		this.argb = argb;
@@ -96,7 +95,6 @@ public class BoundaryTracingAlgo {
 					latestAddedX = currentX;
 					latestAddedY = currentY;
 					polyMap.get(id).addPoint(currentX, currentY);
-					
 				}
 				direction-=1;
 				countRotation=0;
@@ -119,10 +117,8 @@ public class BoundaryTracingAlgo {
 	
 
 	private boolean countPixelofArea(int x, int y, HashMap<Integer,ResultPolygon> polyMap){
-
 		Iterator hmIterator = polyMap.entrySet().iterator(); 
 		while (hmIterator.hasNext()) { 
-			
 			Map.Entry mapElement = (Map.Entry)hmIterator.next(); 
 			int id = (int)mapElement.getKey();
 			ResultPolygon rPoly = (ResultPolygon)mapElement.getValue();
@@ -152,8 +148,6 @@ public class BoundaryTracingAlgo {
 	}
 	
 	
-
-
 	public void decreaseArray(){
 		for(int y = 0;y<getImgHeight();y++){
 			for(int x = 0;x<getImgWidth();x++){
@@ -175,13 +169,13 @@ public class BoundaryTracingAlgo {
 				argbCopy[(y+2)*(getResizedArrayWidth())+(x+2)] = argb[y*imgWidth+x];
 			}
 		}
-		for(int y=0;y<getResizedArrayHeight();y++){
-			for(int x=0;x<getResizedArrayWidth();x++){
-				int pi = argbCopy[y*getResizedArrayWidth()+x]&0xff;
-				System.out.print(pi);
-			}
-			System.out.println("");
-		}
+//		for(int y=0;y<getResizedArrayHeight();y++){
+//			for(int x=0;x<getResizedArrayWidth();x++){
+//				int pi = argbCopy[y*getResizedArrayWidth()+x]&0xff;
+//				System.out.print(pi);
+//			}
+//			System.out.println("");
+//		}
 	}
 		
 		
